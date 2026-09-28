@@ -1,0 +1,19 @@
+[project]
+name = "tyche-job-hunt"
+version = "0.1.0"
+description = "simple job hunt tracking web like setup"
+readme = "README.md"
+authors = [
+    { name = "gabofcampos", email = "gabrielfernandezcamposllc@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "streamlit>=1.64.0",
+]
+
+[project.scripts]
+tyche-job-hunt = "tyche_job_hunt:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
