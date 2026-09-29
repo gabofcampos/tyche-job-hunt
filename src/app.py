@@ -9,6 +9,25 @@ st.set_page_config(
     layout="wide",
 )
 
+
+with st.container(border=True):
+    title, search, add = st.columns([3, 2, 1], vertical_alignment="center")
+    with title:
+        st.title("💼 Job Tracker", anchor=False)
+    with search:
+        query = st.text_input(
+            "Search jobs", type="search", placeholder="Search jobs…", label_visibility="collapsed",
+        ).strip().casefold()
+    with add:
+        st.button("Add job", icon=":material/add:", type="primary", disabled=True,
+                  width="stretch", key="add_job")
+
+searched_for_jobs = [
+    job
+    for job in ALL_JOBS
+    if query in f"{job.company} {job.role} {job.location} {job.tags}".casefold()
+]
+
 board_columns = [
     (ApplicationStatus.INTERESTED, "Jobs I want to consider (not yet applied).", "yellow"),
     (ApplicationStatus.ACTIVE, "Applied and waiting on an answer.", "blue"),
@@ -16,7 +35,7 @@ board_columns = [
 ]
 
 for column, (status, description, color) in zip(st.columns(3, gap="medium"), board_columns):
-    jobs = [job for job in ALL_JOBS if job.status == status]
+    jobs = [job for job in searched_for_jobs if job.status == status]
     with column:
         with st.container(border=True, height="stretch"):
             with st.container(horizontal=True, vertical_alignment="center"):
