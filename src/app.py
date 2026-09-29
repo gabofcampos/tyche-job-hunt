@@ -38,6 +38,17 @@ with st.container(border=True):
             key="add_job",
         )
 
+with st.form("job_form"):
+    st.subheader("Job details")
+
+    company = st.text_input("Company")
+    role = st.text_input("Role")
+
+    submitted = st.form_submit_button("Submit")
+if submitted:
+    st.text(f"Company: {company}")
+    st.text(f"Role: {role}")
+
 searched_for_jobs = [
     job
     for job in st.session_state.jobs
