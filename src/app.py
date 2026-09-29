@@ -27,6 +27,36 @@ def show_job_form():
         selected_status = st.selectbox(
             "Status", list(ApplicationStatus), format_func=lambda status: status.value
         )
+        st.caption(
+            "For Active and Closed jobs, you can add an application date. "
+            "Stage is used for Active jobs; outcome is used for Closed jobs. "
+            "Interested jobs ignore these details."
+        )
+        applied_on = st.date_input("Application date (optional)", value=None)
+        stage = st.selectbox(
+            "Stage (Active jobs)",
+            [
+                "Application submitted",
+                "Recruiter interview",
+                "Technical interview",
+                "Final interview",
+                "Offer",
+            ],
+            index=None,
+            placeholder="Select a stage (optional)",
+        )
+        outcome = st.selectbox(
+            "Outcome (Closed jobs)",
+            [
+                "Rejected",
+                "Withdrawn",
+                "Offer accepted",
+                "Offer declined",
+                "Position closed",
+            ],
+            index=None,
+            placeholder="Select an outcome (optional)",
+        )
 
         submitted = st.form_submit_button("Submit")
     if submitted:
@@ -42,6 +72,17 @@ def show_job_form():
                     location=location.strip(),
                     tags=tags.strip(),
                     status=selected_status,
+                    applied_on=(
+                        applied_on
+                        if selected_status != ApplicationStatus.INTERESTED
+                        else None
+                    ),
+                    stage=(
+                        stage if selected_status == ApplicationStatus.ACTIVE else None
+                    ),
+                    outcome=(
+                        outcome if selected_status == ApplicationStatus.CLOSED else None
+                    ),
                 )
             )
             st.session_state.job_added_message = (
