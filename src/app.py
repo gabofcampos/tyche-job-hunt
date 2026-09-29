@@ -9,38 +9,24 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("💼 Tyche - Job Hunt Tracker")
+board_columns = [
+    (ApplicationStatus.INTERESTED, "Jobs I want to consider (not yet applied).", "yellow"),
+    (ApplicationStatus.ACTIVE, "Applied and waiting on an answer.", "blue"),
+    (ApplicationStatus.CLOSED, "Rejection, withdrawn, or otherwise finished.", "red"),
+]
 
-st.write("Welcome to my job tracking tool.")
+for column, (status, description, color) in zip(st.columns(3, gap="medium"), board_columns):
+    jobs = [job for job in ALL_JOBS if job.status == status]
+    with column:
+        with st.container(border=True, height="stretch"):
+            with st.container(horizontal=True, vertical_alignment="center"):
+                st.header(status.value, anchor=False)
+                st.badge(str(len(jobs)), color=color)
+            st.caption(description)
 
+            with st.container(height="stretch"):
+                for job in jobs:
+                    render_job_card(job)
 
-interested_in_jobs = [job for job in ALL_JOBS if job.status == ApplicationStatus.INTERESTED]
-active_in_jobs = [job for job in ALL_JOBS if job.status == ApplicationStatus.ACTIVE]
-closed_in_jobs = [job for job in ALL_JOBS if job.status == ApplicationStatus.CLOSED]
-
-col_interested, col_active, col_closed = st.columns(3, border=True)
-
-col_interested, col_active, col_closed = st.columns(3, border=True)
-
-with col_interested:
-    st.title(f"Interested ({len(interested_in_jobs)})")
-    st.caption("jobs considered (not yet applied)")
-
-    for job in interested_in_jobs:
-        render_job_card(job)
-
-    st.button("+ add a job")
-
-with col_active:
-    st.title(f"Active ({len(active_in_jobs)})")
-    st.caption("applied and waiting on an answer")
-
-    for job in active_in_jobs:
-        render_job_card(job)
-
-with col_closed:
-    st.title(f"Closed ({len(closed_in_jobs)})")
-    st.caption("rejection, withdrawn, or otherwise finished")
-
-    for job in closed_in_jobs:
-        render_job_card(job)
+            st.button("Add a job", icon=":material/add:", width="stretch",
+                      disabled=True, key=f"add_{status.name.lower()}")

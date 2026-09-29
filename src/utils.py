@@ -3,13 +3,13 @@ from schema import ApplicationStatus, Job
 
 
 def render_job_card(job: Job) -> None:
-    with st.container(border=True):
-        st.subheader(job.company)
-        st.write(job.role)
-        st.caption(job.location)
+    with st.container(border=True, gap="xsmall"):
+        st.subheader(job.company, anchor=False)
+        st.text(job.role)
+        st.caption(f":material/location_on: {job.location}")
 
         if job.status == ApplicationStatus.INTERESTED:
-            st.caption(job.tags)
+            st.caption(" · ".join(tag.strip() for tag in job.tags.split(",") if tag.strip()))
 
         elif job.status == ApplicationStatus.ACTIVE:
             if job.applied_on is not None:
