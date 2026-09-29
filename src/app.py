@@ -1,6 +1,6 @@
 import streamlit as st
 from schema import ApplicationStatus
-from utils import render_job_card
+from utils import render_job_card, render_no_jobs
 from data import ALL_JOBS
 
 st.set_page_config(
@@ -46,6 +46,8 @@ for column, (status, description, color) in zip(st.columns(3, gap="medium"), boa
             with st.container(height="stretch"):
                 for job in jobs:
                     render_job_card(job)
+                if not jobs:
+                    render_no_jobs(status)
 
             st.button("Add a job", icon=":material/add:", width="stretch",
                       disabled=True, key=f"add_{status.name.lower()}")

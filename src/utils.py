@@ -22,3 +22,7 @@ def render_job_card(job: Job) -> None:
                 st.caption(f"Applied {job.applied_on:%d %b %Y}")
             if job.outcome:
                 st.caption(f"Outcome: {job.outcome}")
+
+def render_no_jobs(application_status: ApplicationStatus) -> None:
+    with st.container(border=True, gap="xsmall"):
+        st.caption(f"no jobs marked as {application_status.value}")
