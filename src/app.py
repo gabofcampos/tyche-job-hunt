@@ -10,23 +10,32 @@ st.title("💼 Tyche - Job Hunt Tracker")
 
 st.write("Welcome to my job tracking tool.")
 
-job_card = {
-    "company": "example company",
+job_card_1 = {
+    "company": "example company 1",
     "role": "data engineer",
     "location": "Madrid/Remote",
     "tags": "Python, SQL"
 }
+job_card_2 = {
+    "company": "example company 2",
+    "role": "data engineer",
+    "location": "Madrid/Remote",
+    "tags": "Python, Snowflake, PySpark"
+}
+interested_in_jobs = [job_card_1, job_card_2]
+
 
 col_interested, col_active, col_closed = st.columns(3, border=True)
 
 col_interested.title("Interested")
 col_interested.caption("jobs considered (not yet applied)")
-job = col_interested.container(border=True)
-with job:
-    st.subheader(job_card["company"])
-    st.write(job_card["role"])
-    st.caption(job_card["location"])
-    st.caption(job_card["tags"])
+for job_card in interested_in_jobs:
+    job = col_interested.container(border=True)
+    with job:
+        st.subheader(job_card["company"])
+        st.write(job_card["role"])
+        st.caption(job_card["location"])
+        st.caption(job_card["tags"])
 col_interested.button("+ add a job")
 
 col_active.title("Active")
