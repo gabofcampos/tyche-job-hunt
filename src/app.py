@@ -13,6 +13,44 @@ if "jobs" not in st.session_state:
     st.session_state.jobs = []
 
 
+def close_job_form():
+    st.session_state.job_form_open = False
+
+
+@st.dialog("Job details", on_dismiss=close_job_form)
+def show_job_form():
+    with st.form("job_form", border=False):
+        company = st.text_input("Company")
+        role = st.text_input("Role")
+        location = st.text_input("Location (optional)")
+        tags = st.text_input("Tags (optional)", placeholder="Python, SQL")
+        selected_status = st.selectbox(
+            "Status", list(ApplicationStatus), format_func=lambda status: status.value
+        )
+
+        submitted = st.form_submit_button("Submit")
+    if submitted:
+        company = company.strip()
+        role = role.strip()
+        if not company or not role:
+            st.error("Enter both a company and a role.")
+        else:
+            st.session_state.jobs.append(
+                Job(
+                    company=company,
+                    role=role,
+                    location=location.strip(),
+                    tags=tags.strip(),
+                    status=selected_status,
+                )
+            )
+            st.session_state.job_added_message = (
+                f"Job added to {selected_status.value}."
+            )
+            close_job_form()
+            st.rerun()
+
+
 with st.container(border=True):
     title, search, add = st.columns([3, 2, 1], vertical_alignment="center")
     with title:
@@ -29,43 +67,20 @@ with st.container(border=True):
             .casefold()
         )
     with add:
-        st.button(
+        if st.button(
             "Add job",
             icon=":material/add:",
             type="primary",
-            disabled=True,
             width="stretch",
             key="add_job",
-        )
+        ):
+            st.session_state.job_form_open = True
 
-with st.form("job_form"):
-    st.subheader("Job details")
+if st.session_state.get("job_form_open", False):
+    show_job_form()
 
-    company = st.text_input("Company")
-    role = st.text_input("Role")
-    location = st.text_input("Location (optional)")
-    tags = st.text_input("Tags (optional)", placeholder="Python, SQL")
-    selected_status = st.selectbox(
-        "Status", list(ApplicationStatus), format_func=lambda status: status.value
-    )
-
-    submitted = st.form_submit_button("Submit")
-if submitted:
-    company = company.strip()
-    role = role.strip()
-    if not company or not role:
-        st.error("Enter both a company and a role.")
-    else:
-        st.session_state.jobs.append(
-            Job(
-                company=company,
-                role=role,
-                location=location.strip(),
-                tags=tags.strip(),
-                status=selected_status,
-            )
-        )
-        st.success(f"Job added to {selected_status.value}.")
+if "job_added_message" in st.session_state:
+    st.success(st.session_state.pop("job_added_message"))
 
 searched_for_jobs = [
     job
