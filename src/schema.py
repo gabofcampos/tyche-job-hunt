@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from datetime import date
 
 class ApplicationStatus(Enum):
     INTERESTED = "Interested"
@@ -13,3 +14,6 @@ class Job:
     location: str
     tags: str
     status: ApplicationStatus
+    applied_on: date | None = None
+    stage: str | None = None
+    outcome: str | None = None
