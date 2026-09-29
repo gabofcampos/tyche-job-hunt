@@ -46,8 +46,21 @@ with st.form("job_form"):
 
     submitted = st.form_submit_button("Submit")
 if submitted:
-    st.text(f"Company: {company}")
-    st.text(f"Role: {role}")
+    company = company.strip()
+    role = role.strip()
+    if not company or not role:
+        st.error("Enter both a company and a role.")
+    else:
+        st.session_state.jobs.append(
+            Job(
+                company=company,
+                role=role,
+                location="",
+                tags="",
+                status=ApplicationStatus.INTERESTED,
+            )
+        )
+        st.success("Job added to Interested.")
 
 searched_for_jobs = [
     job
