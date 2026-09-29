@@ -10,16 +10,23 @@ st.title("💼 Tyche - Job Hunt Tracker")
 
 st.write("Welcome to my job tracking tool.")
 
+job_card = {
+    "company": "example company",
+    "role": "data engineer",
+    "location": "Madrid/Remote",
+    "tags": "Python, SQL"
+}
+
 col_interested, col_active, col_closed = st.columns(3, border=True)
 
 col_interested.title("Interested")
 col_interested.caption("jobs considered (not yet applied)")
 job = col_interested.container(border=True)
 with job:
-    st.subheader("Example Company")
-    st.write("Data Engineer")
-    st.caption("Madrid / Remote")
-    st.caption("Python · SQL")
+    st.subheader(job_card["company"])
+    st.write(job_card["role"])
+    st.caption(job_card["location"])
+    st.caption(job_card["tags"])
 col_interested.button("+ add a job")
 
 col_active.title("Active")
