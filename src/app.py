@@ -10,7 +10,7 @@ st.title("💼 Tyche - Job Hunt Tracker")
 
 st.write("Welcome to my job tracking tool.")
 
-col_interested, col_active, col_closed = st.columns(3)
+col_interested, col_active, col_closed = st.columns(3, border=True)
 
 col_interested.title("Interested")
 col_interested.caption("jobs considered (not yet applied)")
