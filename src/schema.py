@@ -1,11 +1,13 @@
 from dataclasses import dataclass
-from enum import Enum
 from datetime import date
+from enum import Enum
+
 
 class ApplicationStatus(Enum):
     INTERESTED = "Interested"
     ACTIVE = "Active"
     CLOSED = "Closed"
+
 
 @dataclass
 class Job:

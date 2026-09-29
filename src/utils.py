@@ -1,4 +1,5 @@
 import streamlit as st
+
 from schema import ApplicationStatus, Job
 
 
@@ -9,7 +10,9 @@ def render_job_card(job: Job) -> None:
         st.caption(f":material/location_on: {job.location}")
 
         if job.status == ApplicationStatus.INTERESTED:
-            st.caption(" · ".join(tag.strip() for tag in job.tags.split(",") if tag.strip()))
+            st.caption(
+                " · ".join(tag.strip() for tag in job.tags.split(",") if tag.strip())
+            )
 
         elif job.status == ApplicationStatus.ACTIVE:
             if job.applied_on is not None:

@@ -1,13 +1,13 @@
-from schema import ApplicationStatus, Job
 from datetime import date
 
+from schema import ApplicationStatus, Job
 
 job_1 = Job(
     company="example company 1",
     role="data engineer",
     location="Madrid/Remote",
     tags="Python, SQL",
-    status=ApplicationStatus.INTERESTED
+    status=ApplicationStatus.INTERESTED,
 )
 
 job_2 = Job(

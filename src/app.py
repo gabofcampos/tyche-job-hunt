@@ -1,7 +1,8 @@
 import streamlit as st
+
+from data import ALL_JOBS
 from schema import ApplicationStatus
 from utils import render_job_card, render_no_jobs
-from data import ALL_JOBS
 
 st.set_page_config(
     page_title="tyche (fortuna)",
@@ -15,12 +16,25 @@ with st.container(border=True):
     with title:
         st.title("💼 Job Tracker", anchor=False)
     with search:
-        query = st.text_input(
-            "Search jobs", type="search", placeholder="Search jobs…", label_visibility="collapsed",
-        ).strip().casefold()
+        query = (
+            st.text_input(
+                "Search jobs",
+                type="search",
+                placeholder="Search jobs…",
+                label_visibility="collapsed",
+            )
+            .strip()
+            .casefold()
+        )
     with add:
-        st.button("Add job", icon=":material/add:", type="primary", disabled=True,
-                  width="stretch", key="add_job")
+        st.button(
+            "Add job",
+            icon=":material/add:",
+            type="primary",
+            disabled=True,
+            width="stretch",
+            key="add_job",
+        )
 
 searched_for_jobs = [
     job
@@ -29,12 +43,18 @@ searched_for_jobs = [
 ]
 
 board_columns = [
-    (ApplicationStatus.INTERESTED, "Jobs I want to consider (not yet applied).", "yellow"),
+    (
+        ApplicationStatus.INTERESTED,
+        "Jobs I want to consider (not yet applied).",
+        "yellow",
+    ),
     (ApplicationStatus.ACTIVE, "Applied and waiting on an answer.", "blue"),
     (ApplicationStatus.CLOSED, "Rejection, withdrawn, or otherwise finished.", "red"),
 ]
 
-for column, (status, description, color) in zip(st.columns(3, gap="medium"), board_columns):
+for column, (status, description, color) in zip(
+    st.columns(3, gap="medium"), board_columns
+):
     jobs = [job for job in searched_for_jobs if job.status == status]
     with column:
         with st.container(border=True, height="stretch"):
@@ -47,8 +67,18 @@ for column, (status, description, color) in zip(st.columns(3, gap="medium"), boa
                 for job in jobs:
                     render_job_card(job)
                 if not jobs:
-                    has_jobs_before_search = any(job.status == status for job in ALL_JOBS)
-                    render_no_jobs(status, search_has_no_matches=bool(query) and has_jobs_before_search)
+                    has_jobs_before_search = any(
+                        job.status == status for job in ALL_JOBS
+                    )
+                    render_no_jobs(
+                        status,
+                        search_has_no_matches=bool(query) and has_jobs_before_search,
+                    )
 
-            st.button("Add a job", icon=":material/add:", width="stretch",
-                      disabled=True, key=f"add_{status.name.lower()}")
+            st.button(
+                "Add a job",
+                icon=":material/add:",
+                width="stretch",
+                disabled=True,
+                key=f"add_{status.name.lower()}",
+            )
