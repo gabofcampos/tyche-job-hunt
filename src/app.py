@@ -14,6 +14,12 @@ col_interested, col_active, col_closed = st.columns(3, border=True)
 
 col_interested.title("Interested")
 col_interested.caption("jobs considered (not yet applied)")
+job = col_interested.container(border=True)
+with job:
+    st.subheader("Example Company")
+    st.write("Data Engineer")
+    st.caption("Madrid / Remote")
+    st.caption("Python · SQL")
 col_interested.button("+ add a job")
 
 col_active.title("Active")
