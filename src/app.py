@@ -1,7 +1,6 @@
 import streamlit as st
 
-from data import ALL_JOBS
-from schema import ApplicationStatus
+from schema import ApplicationStatus, Job
 from utils import render_job_card, render_no_jobs
 
 st.set_page_config(
@@ -9,6 +8,9 @@ st.set_page_config(
     page_icon="💼",
     layout="wide",
 )
+
+if "jobs" not in st.session_state:
+    st.session_state.jobs = []
 
 
 with st.container(border=True):
@@ -38,7 +40,7 @@ with st.container(border=True):
 
 searched_for_jobs = [
     job
-    for job in ALL_JOBS
+    for job in st.session_state.jobs
     if query in f"{job.company} {job.role} {job.location} {job.tags}".casefold()
 ]
 
@@ -68,7 +70,7 @@ for column, (status, description, color) in zip(
                     render_job_card(job)
                 if not jobs:
                     has_jobs_before_search = any(
-                        job.status == status for job in ALL_JOBS
+                        job.status == status for job in st.session_state.jobs
                     )
                     render_no_jobs(
                         status,
