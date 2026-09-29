@@ -43,6 +43,11 @@ with st.form("job_form"):
 
     company = st.text_input("Company")
     role = st.text_input("Role")
+    location = st.text_input("Location (optional)")
+    tags = st.text_input("Tags (optional)", placeholder="Python, SQL")
+    selected_status = st.selectbox(
+        "Status", list(ApplicationStatus), format_func=lambda status: status.value
+    )
 
     submitted = st.form_submit_button("Submit")
 if submitted:
@@ -55,12 +60,12 @@ if submitted:
             Job(
                 company=company,
                 role=role,
-                location="",
-                tags="",
-                status=ApplicationStatus.INTERESTED,
+                location=location.strip(),
+                tags=tags.strip(),
+                status=selected_status,
             )
         )
-        st.success("Job added to Interested.")
+        st.success(f"Job added to {selected_status.value}.")
 
 searched_for_jobs = [
     job

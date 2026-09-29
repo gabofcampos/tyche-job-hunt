@@ -7,14 +7,14 @@ def render_job_card(job: Job) -> None:
     with st.container(border=True, gap="xsmall"):
         st.subheader(job.company, anchor=False)
         st.text(job.role)
-        st.caption(f":material/location_on: {job.location}")
+        if job.location:
+            st.caption(f":material/location_on: {job.location}")
 
-        if job.status == ApplicationStatus.INTERESTED:
-            st.caption(
-                " · ".join(tag.strip() for tag in job.tags.split(",") if tag.strip())
-            )
+        tags = " · ".join(tag.strip() for tag in job.tags.split(",") if tag.strip())
+        if tags:
+            st.caption(tags)
 
-        elif job.status == ApplicationStatus.ACTIVE:
+        if job.status == ApplicationStatus.ACTIVE:
             if job.applied_on is not None:
                 st.caption(f"Applied {job.applied_on:%d %b %Y}")
             if job.stage:
