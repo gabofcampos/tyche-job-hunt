@@ -11,6 +11,8 @@ st.set_page_config(
 
 if "jobs" not in st.session_state:
     st.session_state.jobs = []
+if "job_form_open" not in st.session_state:
+    st.session_state.job_form_open = False
 
 
 def close_job_form():
@@ -19,6 +21,24 @@ def close_job_form():
 
 @st.dialog("Job details", on_dismiss=close_job_form)
 def show_job_form():
+    st.html("""
+        <style>
+        .st-key-cancel_job_form button {
+            background-color: #c92a2a;
+            border-color: #c92a2a;
+            color: white;
+        }
+        .st-key-cancel_job_form button:hover {
+            background-color: #a51111;
+            border-color: #a51111;
+            color: white;
+        }
+        .st-key-cancel_job_form button:focus-visible {
+            outline: 2px solid #c92a2a;
+            outline-offset: 3px;
+        }
+        </style>
+    """)
     with st.form("job_form", border=False):
         company = st.text_input("Company")
         role = st.text_input("Role")
@@ -58,7 +78,13 @@ def show_job_form():
             placeholder="Select an outcome (optional)",
         )
 
-        submitted = st.form_submit_button("Submit")
+        with st.container(horizontal=True):
+            submitted = st.form_submit_button("Submit")
+            cancelled = st.form_submit_button("Cancel", key="cancel_job_form")
+    if cancelled:
+        close_job_form()
+        st.rerun()
+
     if submitted:
         company = company.strip()
         role = role.strip()
