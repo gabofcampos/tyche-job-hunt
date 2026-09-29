@@ -15,6 +15,11 @@ if "job_form_open" not in st.session_state:
     st.session_state.job_form_open = False
 
 
+def open_job_form(status=ApplicationStatus.INTERESTED):
+    st.session_state.job_form_status = status
+    st.session_state.job_form_open = True
+
+
 def close_job_form():
     st.session_state.job_form_open = False
 
@@ -45,7 +50,10 @@ def show_job_form():
         location = st.text_input("Location (optional)")
         tags = st.text_input("Tags (optional)", placeholder="Python, SQL")
         selected_status = st.selectbox(
-            "Status", list(ApplicationStatus), format_func=lambda status: status.value
+            "Status",
+            list(ApplicationStatus),
+            index=list(ApplicationStatus).index(st.session_state.job_form_status),
+            format_func=lambda status: status.value,
         )
         st.caption(
             "For Active and Closed jobs, you can add an application date. "
@@ -134,14 +142,14 @@ with st.container(border=True):
             .casefold()
         )
     with add:
-        if st.button(
+        st.button(
             "Add job",
             icon=":material/add:",
             type="primary",
             width="stretch",
             key="add_job",
-        ):
-            st.session_state.job_form_open = True
+            on_click=open_job_form,
+        )
 
 if st.session_state.get("job_form_open", False):
     show_job_form()
@@ -192,6 +200,7 @@ for column, (status, description, color) in zip(
                 "Add a job",
                 icon=":material/add:",
                 width="stretch",
-                disabled=True,
                 key=f"add_{status.name.lower()}",
+                on_click=open_job_form,
+                args=(status,),
             )
