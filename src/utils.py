@@ -23,6 +23,15 @@ def render_job_card(job: Job) -> None:
             if job.outcome:
                 st.caption(f"Outcome: {job.outcome}")
 
-def render_no_jobs(application_status: ApplicationStatus) -> None:
+
+def render_no_jobs(
+    application_status: ApplicationStatus, *, search_has_no_matches: bool = False
+) -> None:
     with st.container(border=True, gap="xsmall"):
-        st.caption(f"no jobs marked as {application_status.value}")
+        if search_has_no_matches:
+            st.caption(
+                f"No matching jobs in {application_status.value}. "
+                "Try another search or clear it to see all jobs."
+            )
+        else:
+            st.caption(f"No jobs in {application_status.value} yet.")

@@ -47,7 +47,8 @@ for column, (status, description, color) in zip(st.columns(3, gap="medium"), boa
                 for job in jobs:
                     render_job_card(job)
                 if not jobs:
-                    render_no_jobs(status)
+                    has_jobs_before_search = any(job.status == status for job in ALL_JOBS)
+                    render_no_jobs(status, search_has_no_matches=bool(query) and has_jobs_before_search)
 
             st.button("Add a job", icon=":material/add:", width="stretch",
                       disabled=True, key=f"add_{status.name.lower()}")
