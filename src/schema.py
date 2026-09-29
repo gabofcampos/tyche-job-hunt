@@ -1,4 +1,10 @@
 from dataclasses import dataclass
+from enum import Enum
+
+class ApplicationStatus(Enum):
+    INTERESTED = "Interested"
+    ACTIVE = "Active"
+    CLOSED = "Closed"
 
 @dataclass
 class Job:
@@ -6,3 +12,4 @@ class Job:
     role: str
     location: str
     tags: str
+    status: ApplicationStatus
