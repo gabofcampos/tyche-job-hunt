@@ -23,7 +23,7 @@ col_interested, col_active, col_closed = st.columns(3, border=True)
 col_interested, col_active, col_closed = st.columns(3, border=True)
 
 with col_interested:
-    st.title("Interested")
+    st.title(f"Interested ({len(interested_in_jobs)})")
     st.caption("jobs considered (not yet applied)")
 
     for job in interested_in_jobs:
@@ -32,14 +32,14 @@ with col_interested:
     st.button("+ add a job")
 
 with col_active:
-    st.title("Active")
+    st.title(f"Active ({len(active_in_jobs)})")
     st.caption("applied and waiting on an answer")
 
     for job in active_in_jobs:
         render_job_card(job)
 
 with col_closed:
-    st.title("Closed")
+    st.title(f"Closed ({len(closed_in_jobs)})")
     st.caption("rejection, withdrawn, or otherwise finished")
 
     for job in closed_in_jobs:
