@@ -1,0 +1,18 @@
+# Light theme adapted from the shadcn template to the Excalidraw board.
+[theme]
+base = "light"
+primaryColor = "#1971c2"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f8f9fa"
+textColor = "#1b1b1f"
+borderColor = "#ced4da"
+showWidgetBorder = true
+baseRadius = "12px"
+buttonRadius = "12px"
+font = "sans-serif"
+baseFontSize = 16
+headingFontSizes = ["32px", "28px", "22px", "18px", "16px", "14px"]
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+yellowBackgroundColor = "#fff3bf"
+blueBackgroundColor = "#d0ebff"
+redBackgroundColor = "#ffe3e3"
