@@ -20,8 +20,16 @@ The app does not initialize SQLite automatically yet. To create the local
 database, run this from the repository root:
 
 ```bash
-uv run python -c "from src.storage import initialize_database; initialize_database()"
+uv run python - <<'PYTHON'
+from src.storage import Storage
+
+with Storage() as storage:
+    storage.initialize_database()
+PYTHON
 ```
+
+The `with` block closes the shared connection when finished. Each storage
+method commits or rolls back its own transaction.
 
 This will create a `data/jobs.sqlite3` and its empty `jobs` table. It is safe to run
 again: existing records are preserved. The database is local runtime data and
