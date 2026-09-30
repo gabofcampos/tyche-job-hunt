@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import sqlite3
 from contextlib import closing
+from datetime import date
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from schema import Job
+from src.schema import ApplicationStatus, Job
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "jobs.sqlite3"
 
@@ -55,3 +54,34 @@ def insert_job(job: Job, db_path: Path = DEFAULT_DB_PATH) -> None:
                     job.outcome,
                 ),
             )
+
+
+def load_jobs(db_path: Path = DEFAULT_DB_PATH) -> list[Job]:
+    with closing(sqlite3.connect(db_path, autocommit=False)) as connection:
+        connection.row_factory = sqlite3.Row
+        with connection:
+            rows = connection.execute("""
+                SELECT id, company, role, location, tags, status,
+                       applied_on, stage, outcome
+                FROM jobs
+                ORDER BY rowid ASC
+                """).fetchall()
+
+    return [
+        Job(
+            id=row["id"],
+            company=row["company"],
+            role=row["role"],
+            location=row["location"],
+            tags=row["tags"],
+            status=ApplicationStatus(row["status"]),
+            applied_on=(
+                date.fromisoformat(row["applied_on"])
+                if row["applied_on"] is not None
+                else None
+            ),
+            stage=row["stage"],
+            outcome=row["outcome"],
+        )
+        for row in rows
+    ]

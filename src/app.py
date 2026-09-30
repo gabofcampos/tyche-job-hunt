@@ -1,8 +1,8 @@
 import streamlit as st
 
-from job_cards import render_job_card, render_no_jobs
-from job_form import open_job_form, show_job_form
-from schema import ApplicationStatus
+from src.job_cards import render_job_card, render_no_jobs
+from src.job_form import open_job_form, show_job_form
+from src.schema import ApplicationStatus
 
 st.set_page_config(
     page_title="tyche (fortuna)",

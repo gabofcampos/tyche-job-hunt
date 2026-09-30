@@ -2,7 +2,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from schema import ApplicationStatus, Job
+from src.schema import ApplicationStatus, Job
 
 
 def open_job_form(status: ApplicationStatus = ApplicationStatus.INTERESTED) -> None:

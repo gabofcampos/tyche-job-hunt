@@ -8,9 +8,9 @@ rules:
 - it will be practical
 
 ## just cloned the repo...
-### how do I install it?
+### how do I install the dependencies?
 install the repo dependencies by running
-```
+```bash
 uv sync
 ```
 
@@ -32,6 +32,25 @@ still keeps jobs in Streamlit session state; creating the database does not yet
 make those jobs persist across sessions. 
 
 ### how do I run it?
+
+Run from the repository root so Python can resolve the `src` package:
+
+```bash
+uv run python -m streamlit run src/app.py
 ```
-uv run streamlit run src/app.py
+
+### how do I run the tests?
+test suit uses pytest (installed in dev dependencies). to run the test suite once deps installed:
+
+```bash
+uv run python -m pytest -q
+```
+
+Tests use pytest and assertpy. 
+Storage tests create temporary databases, so
+they do not require database initialization or modify `data/jobs.sqlite3`.
+
+To run only the storage tests:
+```bash
+uv run python -m pytest tests/test_storage.py -q
 ```

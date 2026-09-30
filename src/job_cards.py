@@ -1,6 +1,6 @@
 import streamlit as st
 
-from schema import ApplicationStatus, Job
+from src.schema import ApplicationStatus, Job
 
 
 def render_job_card(job: Job) -> None:
