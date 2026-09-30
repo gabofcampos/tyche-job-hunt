@@ -16,5 +16,5 @@ uv sync
 
 ### how do I run it?
 ```
-uv run
+uv run streamlit run src/app.py
 ```
