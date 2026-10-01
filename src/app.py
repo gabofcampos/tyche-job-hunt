@@ -3,6 +3,7 @@ import streamlit as st
 from src.job_cards import render_job_card, render_no_jobs
 from src.job_form import open_job_form, show_job_form
 from src.schema import ApplicationStatus
+from src.storage import Storage
 
 st.set_page_config(
     page_title="tyche (fortuna)",
@@ -10,8 +11,9 @@ st.set_page_config(
     layout="wide",
 )
 
-if "jobs" not in st.session_state:
-    st.session_state.jobs = []
+with Storage() as storage:
+    storage.initialize_database()
+    all_jobs = storage.load_jobs()
 if "job_form_open" not in st.session_state:
     st.session_state.job_form_open = False
 
@@ -49,7 +51,7 @@ if "job_added_message" in st.session_state:
 
 searched_for_jobs = [
     job
-    for job in st.session_state.jobs
+    for job in all_jobs
     if query in f"{job.company} {job.role} {job.location} {job.tags}".casefold()
 ]
 
@@ -79,7 +81,7 @@ for column, (status, description, color) in zip(
                     render_job_card(job)
                 if not jobs:
                     has_jobs_before_search = any(
-                        job.status == status for job in st.session_state.jobs
+                        job.status == status for job in all_jobs
                     )
                     render_no_jobs(
                         status,

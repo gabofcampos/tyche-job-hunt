@@ -16,28 +16,16 @@ uv sync
 
 ### how do I initialize the database?
 
-The app does not initialize SQLite automatically yet. To create the local
-database, run this from the repository root:
+The app automatically creates `data/jobs.sqlite3` and its `jobs` table on
+startup if they do not exist. No separate initialization command is needed.
+Existing records are preserved.
 
-```bash
-uv run python - <<'PYTHON'
-from src.storage import Storage
+Jobs and their selected statuses are saved to SQLite and loaded on each full
+app rerun. Closing and reopening Streamlit preserves saved jobs as long as the
+database file remains in place. Search, popup state, and unsaved drafts are
+temporary. Jobs from older in-memory sessions are not automatically imported.
 
-with Storage() as storage:
-    storage.initialize_database()
-PYTHON
-```
-
-The `with` block closes the shared connection when finished. Each storage
-method commits or rolls back its own transaction.
-
-This will create a `data/jobs.sqlite3` and its empty `jobs` table. It is safe to run
-again: existing records are preserved. The database is local runtime data and
-is not included in a fresh clone.
-
-Database initialization is not required to run the current dashboard. The app
-still keeps jobs in Streamlit session state; creating the database does not yet
-make those jobs persist across sessions. 
+The database is local runtime data and is not included in a fresh clone.
 
 ### how do I run it?
 

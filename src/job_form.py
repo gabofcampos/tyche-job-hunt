@@ -3,6 +3,7 @@ from pathlib import Path
 import streamlit as st
 
 from src.schema import ApplicationStatus, Job
+from src.storage import Storage
 
 
 def open_job_form(status: ApplicationStatus = ApplicationStatus.INTERESTED) -> None:
@@ -72,26 +73,31 @@ def show_job_form() -> None:
         if not company or not role:
             st.error("Enter both a company and a role.")
         else:
-            st.session_state.jobs.append(
-                Job(
-                    company=company,
-                    role=role,
-                    location=location.strip(),
-                    tags=tags.strip(),
-                    status=selected_status,
-                    applied_on=(
-                        applied_on
-                        if selected_status != ApplicationStatus.INTERESTED
-                        else None
-                    ),
-                    stage=(
-                        stage if selected_status == ApplicationStatus.ACTIVE else None
-                    ),
-                    outcome=(
-                        outcome if selected_status == ApplicationStatus.CLOSED else None
-                    ),
+            with Storage() as storage:
+                storage.insert_job(
+                    Job(
+                        company=company,
+                        role=role,
+                        location=location.strip(),
+                        tags=tags.strip(),
+                        status=selected_status,
+                        applied_on=(
+                            applied_on
+                            if selected_status != ApplicationStatus.INTERESTED
+                            else None
+                        ),
+                        stage=(
+                            stage
+                            if selected_status == ApplicationStatus.ACTIVE
+                            else None
+                        ),
+                        outcome=(
+                            outcome
+                            if selected_status == ApplicationStatus.CLOSED
+                            else None
+                        ),
+                    )
                 )
-            )
             st.session_state.job_added_message = (
                 f"Job added to {selected_status.value}."
             )
