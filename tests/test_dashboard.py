@@ -1,4 +1,7 @@
+import sqlite3
+from datetime import date
 from functools import partial
+from unittest.mock import Mock
 from pathlib import Path
 
 import pytest
@@ -126,3 +129,160 @@ class TestDashboard:
         assert_that(
             (error, jobs, app.session_state.job_form_open, list(app.exception))
         ).is_equal_to(("Enter both a company and a role.", [], False, []))
+
+    @pytest.mark.parametrize("error", [sqlite3.OperationalError, OSError])
+    def test_failed_save_preserves_draft(
+        self, app: AppTest, monkeypatch: pytest.MonkeyPatch, error: type[Exception]
+    ) -> None:
+        app.button(key="add_active").click().run()
+        next(w for w in app.text_input if w.label == "Location (optional)").set_value(
+            "Remote"
+        )
+        next(w for w in app.text_input if w.label == "Tags (optional)").set_value(
+            "Python, SQL"
+        )
+        app.date_input[0].set_value(date(2026, 9, 12))
+        app.selectbox[1].select("Technical interview")
+        monkeypatch.setattr(
+            Storage, "insert_job", Mock(side_effect=error("Simulated failure"))
+        )
+
+        submit(app, "Example", "Developer")
+
+        assert_that(
+            (
+                list(app.exception),
+                app.session_state.job_form_open,
+                [w.value for w in app.text_input if w.label != "Search jobs"],
+                [w.value for w in app.selectbox],
+                app.date_input[0].value,
+            )
+        ).is_equal_to(
+            (
+                [],
+                True,
+                ["Example", "Developer", "Remote", "Python, SQL"],
+                [ApplicationStatus.ACTIVE, "Technical interview", None],
+                date(2026, 9, 12),
+            )
+        )
+
+    def test_failed_save_shows_error_without_success(
+        self, app: AppTest, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        app.button(key="add_job").click().run()
+        monkeypatch.setattr(
+            Storage,
+            "insert_job",
+            Mock(side_effect=sqlite3.OperationalError("Simulated failure")),
+        )
+
+        submit(app, "Example", "Developer")
+
+        assert_that(([e.value for e in app.error], list(app.success))).is_equal_to(
+            (
+                [
+                    "Could not save this job. Your entries are still in the form. "
+                    "Check that the data folder is writable and the database "
+                    "is not locked, then click Submit again."
+                ],
+                [],
+            )
+        )
+
+    def test_failed_save_adds_no_row(
+        self, app: AppTest, db_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        app.button(key="add_job").click().run()
+        monkeypatch.setattr(
+            Storage,
+            "insert_job",
+            Mock(side_effect=sqlite3.OperationalError("Simulated failure")),
+        )
+
+        submit(app, "Example", "Developer")
+        with Storage(db_path) as database:
+            jobs = database.load_jobs()
+
+        assert_that(jobs).is_empty()
+
+    def test_retry_after_failed_save_saves_exactly_once(
+        self, app: AppTest, db_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        app.button(key="add_job").click().run()
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                Storage,
+                "insert_job",
+                Mock(side_effect=sqlite3.OperationalError("Simulated failure")),
+            )
+            submit(app, "Example", "Developer")
+
+        next(b for b in app.button if b.label == "Submit").click().run()
+        with Storage(db_path) as database:
+            jobs = database.load_jobs()
+
+        assert_that(
+            (
+                list(app.exception),
+                [(j.company, j.role) for j in jobs],
+                app.session_state.job_form_open,
+            )
+        ).is_equal_to(([], [("Example", "Developer")], False))
+
+    @pytest.mark.parametrize("method", ["initialize_database", "load_jobs"])
+    @pytest.mark.parametrize("error", [sqlite3.OperationalError, OSError])
+    def test_storage_failure_stops_board(
+        self,
+        app: AppTest,
+        monkeypatch: pytest.MonkeyPatch,
+        method: str,
+        error: type[Exception],
+    ) -> None:
+        monkeypatch.setattr(
+            Storage, method, Mock(side_effect=error("Simulated failure"))
+        )
+
+        app.run()
+
+        assert_that(
+            (
+                list(app.exception),
+                [e.value for e in app.error],
+                list(app.header),
+                [m.value for m in app.markdown if "-badge[" in m.value],
+            )
+        ).is_equal_to(
+            (
+                [],
+                [
+                    "Could not open or read the jobs database. "
+                    "Check that the data folder is accessible and writable, "
+                    "then reload the app."
+                ],
+                [],
+                [],
+            )
+        )
+
+    def test_invalid_stored_value_stops_board(
+        self, app: AppTest, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(
+            Storage, "load_jobs", Mock(side_effect=ValueError("Invalid date"))
+        )
+
+        app.run()
+
+        assert_that(
+            (list(app.exception), [e.value for e in app.error], list(app.header))
+        ).is_equal_to(
+            (
+                [],
+                [
+                    "The jobs database contains an invalid date or status. "
+                    "Check the stored data or restore a known-good backup."
+                ],
+                [],
+            )
+        )

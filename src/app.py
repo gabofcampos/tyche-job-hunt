@@ -1,3 +1,5 @@
+import sqlite3
+
 import streamlit as st
 
 from src.job_cards import render_job_card, render_no_jobs
@@ -11,9 +13,24 @@ st.set_page_config(
     layout="wide",
 )
 
-with Storage() as storage:
-    storage.initialize_database()
-    all_jobs = storage.load_jobs()
+try:
+    with Storage() as storage:
+        storage.initialize_database()
+        all_jobs = storage.load_jobs()
+except (sqlite3.Error, OSError):
+    st.error(
+        "Could not open or read the jobs database. "
+        "Check that the data folder is accessible and writable, "
+        "then reload the app."
+    )
+    st.stop()
+except ValueError:
+    st.error(
+        "The jobs database contains an invalid date or status. "
+        "Check the stored data or restore a known-good backup."
+    )
+    st.stop()
+
 if "job_form_open" not in st.session_state:
     st.session_state.job_form_open = False
 
