@@ -1,8 +1,8 @@
 import sqlite3
 from datetime import date
 from functools import partial
-from unittest.mock import Mock
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from assertpy import assert_that
@@ -29,10 +29,31 @@ def app(db_path: Path) -> AppTest:
     ).run()
 
 
+def fill_text_fields(app: AppTest, values: dict[str, str]) -> None:
+    for label, value in values.items():
+        next(widget for widget in app.text_input if widget.label == label).set_value(
+            value
+        )
+
+
+def fill_application_details(app: AppTest, applied_on: date, stage: str) -> None:
+    next(
+        widget
+        for widget in app.date_input
+        if widget.label == "Application date (optional)"
+    ).set_value(applied_on)
+    next(
+        widget for widget in app.selectbox if widget.label == "Stage (Active jobs)"
+    ).select(stage)
+
+
+def click_submit(app: AppTest) -> None:
+    next(button for button in app.button if button.label == "Submit").click().run()
+
+
 def submit(app: AppTest, company: str, role: str) -> None:
-    next(w for w in app.text_input if w.label == "Company").set_value(company)
-    next(w for w in app.text_input if w.label == "Role").set_value(role)
-    next(b for b in app.button if b.label == "Submit").click().run()
+    fill_text_fields(app, {"Company": company, "Role": role})
+    click_submit(app)
 
 
 class TestDashboard:
@@ -135,14 +156,10 @@ class TestDashboard:
         self, app: AppTest, monkeypatch: pytest.MonkeyPatch, error: type[Exception]
     ) -> None:
         app.button(key="add_active").click().run()
-        next(w for w in app.text_input if w.label == "Location (optional)").set_value(
-            "Remote"
+        fill_text_fields(
+            app, {"Location (optional)": "Remote", "Tags (optional)": "Python, SQL"}
         )
-        next(w for w in app.text_input if w.label == "Tags (optional)").set_value(
-            "Python, SQL"
-        )
-        app.date_input[0].set_value(date(2026, 9, 12))
-        app.selectbox[1].select("Technical interview")
+        fill_application_details(app, date(2026, 9, 12), "Technical interview")
         monkeypatch.setattr(
             Storage, "insert_job", Mock(side_effect=error("Simulated failure"))
         )
@@ -218,7 +235,7 @@ class TestDashboard:
             )
             submit(app, "Example", "Developer")
 
-        next(b for b in app.button if b.label == "Submit").click().run()
+        click_submit(app)
         with Storage(db_path) as database:
             jobs = database.load_jobs()
 
@@ -285,4 +302,47 @@ class TestDashboard:
                 ],
                 [],
             )
+        )
+
+    @pytest.mark.parametrize("query", ["eXaMpLe", " DEVELOPER "])
+    def test_search_is_case_insensitive(self, app: AppTest, query: str) -> None:
+        app.button(key="add_job").click().run()
+        submit(app, "Example", "Developer")
+
+        app.text_input[0].set_value(query).run()
+
+        assert_that([h.value for h in app.subheader]).is_equal_to(["Example"])
+
+    @pytest.mark.parametrize(
+        "company,role",
+        [("", "Developer"), ("Example", ""), (" ", "Developer"), ("Example", " ")],
+    )
+    def test_required_fields_reject_empty_or_whitespace(
+        self, app: AppTest, db_path: Path, company: str, role: str
+    ) -> None:
+        app.button(key="add_job").click().run()
+
+        submit(app, company, role)
+        with Storage(db_path) as database:
+            jobs = database.load_jobs()
+
+        assert_that((jobs, [e.value for e in app.error])).is_equal_to(
+            ([], ["Enter both a company and a role."])
+        )
+
+    def test_header_opens_fresh_form_after_save(self, app: AppTest) -> None:
+        app.button(key="add_active").click().run()
+        fill_application_details(app, date(2026, 9, 12), "Technical interview")
+        submit(app, "Example", "Developer")
+
+        app.button(key="add_job").click().run()
+
+        assert_that(
+            (
+                [w.value for w in app.text_input if w.label != "Search jobs"],
+                [w.value for w in app.selectbox],
+                app.date_input[0].value,
+            )
+        ).is_equal_to(
+            (["", "", "", ""], [ApplicationStatus.INTERESTED, None, None], None)
         )
