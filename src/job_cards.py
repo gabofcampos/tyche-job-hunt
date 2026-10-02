@@ -7,6 +7,8 @@ def render_job_card(job: Job) -> None:
     with st.container(border=True, gap="xsmall"):
         st.subheader(job.company, anchor=False)
         st.text(job.role)
+        if job.platform:
+            st.text(f"Job search platform: {job.platform}")
         if job.location:
             st.caption(f":material/location_on: {job.location}")
 
