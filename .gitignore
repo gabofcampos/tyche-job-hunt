@@ -71,6 +71,7 @@ __pypackages__/
 
 # sqlite
 /data/
+/backups/
 
 # pers
 plan/
