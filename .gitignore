@@ -69,5 +69,9 @@ __pypackages__/
 .agents/skills/developing-with-streamlit
 .claude/skills/developing-with-streamlit
 
+# sqlite
+/data/
+/backups/
+
 # pers
 plan/
