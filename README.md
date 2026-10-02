@@ -36,14 +36,14 @@ uv run python -m streamlit run src/app.py
 ```
 
 ### how do I run the tests?
-test suit uses pytest (installed in dev dependencies). to run the test suite once deps installed:
+The suite uses pytest and assertpy, installed with the development dependencies.
+Run it from the repository root:
 
 ```bash
 uv run python -m pytest -q
 ```
 
-Tests use pytest and assertpy. 
-Storage tests create temporary databases, so
+Storage and dashboard tests use temporary databases, so
 they do not require database initialization or modify `data/jobs.sqlite3`.
 
 To run only the storage tests:
@@ -116,3 +116,42 @@ They never overwrite the normal database. Run them with:
 ```bash
 uv run python -m pytest tests/test_backup.py -q
 ```
+
+
+### what does persistence cover?
+
+Saved jobs retain their IDs, company, role, location, tags, selected status, and
+relevant application details. The board derives columns and counts from those
+records. Search text, popup visibility, and unsaved form entries are temporary.
+
+App sessions on this machine share `data/jobs.sqlite3`. A full rerun reads the
+latest committed jobs, but there is no live synchronization between browser
+sessions and no authentication. Existing job editing, status changes, and deletion
+are not implemented.
+
+The database and default backup paths are relative to the project location,
+not the shell working directory. Keeping the database file is necessary for
+persistence; deployment to an ephemeral filesystem needs separate durable
+storage. Creating the table at startup does not migrate an existing schema.
+
+### what has been verified?
+
+The automated checks cover storage round trips, validation, failed-save retry,
+search, fresh sessions, and snapshot recovery. They use disposable databases
+and never reset normal application data.
+
+Run focused checks with:
+
+```bash
+uv run python -m pytest tests/test_dashboard.py -q
+uv run python -m pytest tests/test_restart.py -q
+uv run python -m pytest tests/test_backup.py -q
+```
+
+The restart test saves through the form in a headless Streamlit test process,
+waits for it to exit, and loads the same database in a new process. It compares
+all job fields and IDs, ordering, cards, and counts. Backup tests restore a
+snapshot into a separate database and verify the saved records.
+
+The manual browser/Streamlit server stop-start check was confirmed complete
+by the user on 2026-10-02. Milestone 2 verification is complete.
