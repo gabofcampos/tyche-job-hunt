@@ -5,6 +5,7 @@ import streamlit as st
 from src.job_details import render_job_details
 from src.job_cards import render_job_card, render_no_jobs
 from src.job_form import open_job_form, show_job_form
+from src.presentation import STATUS_COLORS
 from src.schema import ApplicationStatus
 from src.storage import Storage
 
@@ -77,10 +78,9 @@ board_columns = [
     (
         ApplicationStatus.INTERESTED,
         "Jobs I want to consider (not yet applied).",
-        "yellow",
     ),
-    (ApplicationStatus.ACTIVE, "Applied and waiting on an answer.", "blue"),
-    (ApplicationStatus.CLOSED, "Rejection, withdrawn, or otherwise finished.", "red"),
+    (ApplicationStatus.ACTIVE, "Applied and waiting on an answer."),
+    (ApplicationStatus.CLOSED, "Rejection, withdrawn, or otherwise finished."),
 ]
 
 selected_job_id = st.session_state.get("selected_job_id")
@@ -95,7 +95,7 @@ else:
     board_area = st.container()
 
 with board_area:
-    for column, (status, description, color) in zip(
+    for column, (status, description) in zip(
         st.columns(3, gap="medium"), board_columns
     ):
         jobs = [job for job in searched_for_jobs if job.status == status]
@@ -103,7 +103,7 @@ with board_area:
             with st.container(border=True, height="stretch"):
                 with st.container(horizontal=True, vertical_alignment="center"):
                     st.header(status.value, anchor=False)
-                    st.badge(str(len(jobs)), color=color)
+                    st.badge(str(len(jobs)), color=STATUS_COLORS[status])
                 st.caption(description)
 
                 with st.container(height="stretch"):

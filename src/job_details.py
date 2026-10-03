@@ -1,5 +1,6 @@
 import streamlit as st
 
+from src.presentation import STATUS_COLORS
 from src.schema import ApplicationStatus, Job
 
 
@@ -8,11 +9,6 @@ def close_job_details() -> None:
 
 
 def render_job_details(job: Job) -> None:
-    colors = {
-        ApplicationStatus.INTERESTED: "yellow",
-        ApplicationStatus.ACTIVE: "blue",
-        ApplicationStatus.CLOSED: "red",
-    }
     with st.container(border=True, key="job_details"):
         with st.container(horizontal=True, vertical_alignment="center"):
             st.header("Job details", anchor=False)
@@ -21,7 +17,7 @@ def render_job_details(job: Job) -> None:
             )
         st.subheader(job.company, anchor=False)
         st.text(job.role)
-        st.badge(job.status.value, color=colors[job.status])
+        st.badge(job.status.value, color=STATUS_COLORS[job.status])
 
         if job.status != ApplicationStatus.INTERESTED:
             st.caption("Application")
