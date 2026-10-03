@@ -406,7 +406,20 @@ class TestDashboard:
                 [t.value for t in app.text],
                 list(app.exception),
             )
-        ).is_equal_to((job.id, ["Example"], ["Developer"], []))
+        ).is_equal_to(
+            (
+                job.id,
+                ["Example"],
+                [
+                    "Developer",
+                    "No application date provided.",
+                    "No stage provided.",
+                    "No location provided.",
+                    "No tags provided.",
+                ],
+                [],
+            )
+        )
 
     def test_close_clears_selection(self, app: AppTest, db_path: Path) -> None:
         job = Job("Example", "Developer", "", "", ApplicationStatus.ACTIVE)
@@ -445,3 +458,126 @@ class TestDashboard:
                 [],
             )
         )
+
+    @pytest.mark.parametrize(
+        "status,expected",
+        [
+            (ApplicationStatus.INTERESTED, ["Developer", "Remote"]),
+            (
+                ApplicationStatus.ACTIVE,
+                ["Developer", "Applied 12 Sep 2026", "Technical interview", "Remote"],
+            ),
+            (
+                ApplicationStatus.CLOSED,
+                ["Developer", "Applied 12 Sep 2026", "Withdrawn", "Remote"],
+            ),
+        ],
+    )
+    def test_detail_panel_displays_relevant_fields(
+        self,
+        app: AppTest,
+        db_path: Path,
+        status: ApplicationStatus,
+        expected: list[str],
+    ) -> None:
+        job = Job(
+            "Example",
+            "Developer",
+            "Remote",
+            "Python, SQL",
+            status,
+            date(2026, 9, 12),
+            "Technical interview",
+            "Withdrawn",
+        )
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+
+        app.button(key=f"job_{job.id}").click().run()
+        panel = app.get_by_key("job_details")
+
+        assert_that(
+            (
+                list(app.exception),
+                [t.value for t in panel.text],
+                [m.value for m in panel.markdown],
+            )
+        ).is_equal_to(
+            (
+                [],
+                expected,
+                [
+                    f":{ {ApplicationStatus.INTERESTED: 'yellow', ApplicationStatus.ACTIVE: 'blue', ApplicationStatus.CLOSED: 'red'}[status]}-badge[{status.value}]",
+                    ":gray-badge[Python]",
+                    ":gray-badge[SQL]",
+                ],
+            )
+        )
+
+    @pytest.mark.parametrize(
+        "status,expected",
+        [
+            (
+                ApplicationStatus.INTERESTED,
+                ["Developer", "No location provided.", "No tags provided."],
+            ),
+            (
+                ApplicationStatus.ACTIVE,
+                [
+                    "Developer",
+                    "No application date provided.",
+                    "No stage provided.",
+                    "No location provided.",
+                    "No tags provided.",
+                ],
+            ),
+            (
+                ApplicationStatus.CLOSED,
+                [
+                    "Developer",
+                    "No application date provided.",
+                    "No outcome provided.",
+                    "No location provided.",
+                    "No tags provided.",
+                ],
+            ),
+        ],
+    )
+    def test_detail_panel_handles_missing_fields(
+        self,
+        app: AppTest,
+        db_path: Path,
+        status: ApplicationStatus,
+        expected: list[str],
+    ) -> None:
+        job = Job("Example", "Developer", "", " , ", status)
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+
+        app.button(key=f"job_{job.id}").click().run()
+
+        assert_that([t.value for t in app.get_by_key("job_details").text]).is_equal_to(
+            expected
+        )
+
+    def test_close_restores_board_layout(self, app: AppTest, db_path: Path) -> None:
+        job = Job("Example", "Developer", "", "", ApplicationStatus.INTERESTED)
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+        original_columns = len(app.columns)
+        app.button(key=f"job_{job.id}").click().run()
+        expanded_columns = len(app.columns)
+
+        app.button(key="close_job_details").click().run()
+
+        assert_that(
+            (
+                expanded_columns - original_columns,
+                len(app.columns),
+                app.session_state.selected_job_id,
+                list(app.exception),
+            )
+        ).is_equal_to((2, original_columns, None, []))

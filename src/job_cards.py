@@ -3,6 +3,10 @@ import streamlit as st
 from src.schema import ApplicationStatus, Job
 
 
+def select_job(job_id: str) -> None:
+    st.session_state.selected_job_id = job_id
+
+
 def render_job_card(job: Job) -> None:
     with st.container(border=True, gap="xsmall"):
         st.subheader(job.company, anchor=False)
@@ -28,12 +32,13 @@ def render_job_card(job: Job) -> None:
             if job.outcome:
                 st.caption(f"Outcome: {job.outcome}")
 
-        if st.button(
+        st.button(
             "View details",
             key=f"job_{job.id}",
             width="stretch",
-        ):
-            st.session_state.selected_job_id = job.id
+            on_click=select_job,
+            args=(job.id,),
+        )
 
 
 def render_no_jobs(

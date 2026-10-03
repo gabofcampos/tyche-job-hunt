@@ -2,7 +2,7 @@ import sqlite3
 
 import streamlit as st
 
-from job_details import render_job_details
+from src.job_details import render_job_details
 from src.job_cards import render_job_card, render_no_jobs
 from src.job_form import open_job_form, show_job_form
 from src.schema import ApplicationStatus
@@ -83,49 +83,51 @@ board_columns = [
     (ApplicationStatus.CLOSED, "Rejection, withdrawn, or otherwise finished.", "red"),
 ]
 
-for column, (status, description, color) in zip(
-    st.columns(3, gap="medium"), board_columns
-):
-    jobs = [job for job in searched_for_jobs if job.status == status]
-    with column:
-        with st.container(border=True, height="stretch"):
-            with st.container(horizontal=True, vertical_alignment="center"):
-                st.header(status.value, anchor=False)
-                st.badge(str(len(jobs)), color=color)
-            st.caption(description)
-
-            with st.container(height="stretch"):
-                for job in jobs:
-                    render_job_card(job)
-                if not jobs:
-                    has_jobs_before_search = any(
-                        job.status == status for job in all_jobs
-                    )
-                    render_no_jobs(
-                        status,
-                        search_has_no_matches=bool(query) and has_jobs_before_search,
-                    )
-
-            st.button(
-                "Add a job",
-                icon=":material/add:",
-                width="stretch",
-                key=f"add_{status.name.lower()}",
-                on_click=open_job_form,
-                args=(status,),
-            )
-
-
 selected_job_id = st.session_state.get("selected_job_id")
-if selected_job_id is not None:
-    selected_job = next(
-        (job for job in all_jobs if job.id == selected_job_id),
-        None,
-    )
-    if selected_job is None:
-        st.session_state.selected_job_id = None
-        st.info(
-            "This job is no longer available. Select another job to view its details."
-        )
-    else:
+selected_job = next((job for job in all_jobs if job.id == selected_job_id), None)
+if selected_job_id is not None and selected_job is None:
+    st.session_state.selected_job_id = None
+    st.info("This job is no longer available. Select another job to view its details.")
+
+if selected_job is not None:
+    board_area, details_area = st.columns([2, 1], gap="medium")
+else:
+    board_area = st.container()
+
+with board_area:
+    for column, (status, description, color) in zip(
+        st.columns(3, gap="medium"), board_columns
+    ):
+        jobs = [job for job in searched_for_jobs if job.status == status]
+        with column:
+            with st.container(border=True, height="stretch"):
+                with st.container(horizontal=True, vertical_alignment="center"):
+                    st.header(status.value, anchor=False)
+                    st.badge(str(len(jobs)), color=color)
+                st.caption(description)
+
+                with st.container(height="stretch"):
+                    for job in jobs:
+                        render_job_card(job)
+                    if not jobs:
+                        has_jobs_before_search = any(
+                            job.status == status for job in all_jobs
+                        )
+                        render_no_jobs(
+                            status,
+                            search_has_no_matches=bool(query)
+                            and has_jobs_before_search,
+                        )
+
+                st.button(
+                    "Add a job",
+                    icon=":material/add:",
+                    width="stretch",
+                    key=f"add_{status.name.lower()}",
+                    on_click=open_job_form,
+                    args=(status,),
+                )
+
+if selected_job is not None:
+    with details_area:
         render_job_details(selected_job)
