@@ -4,6 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from src import messages
 from src.schema import ApplicationStatus, Job, is_valid_posting_url
 from src.storage import JobNotFoundError, Storage
 
@@ -63,12 +64,9 @@ def with_saved_value(options: list[str], key: str) -> list[str]:
 def validate_job(job: Job) -> str | None:
     """Return the first problem with a trimmed job, or None if it can be saved."""
     if not job.company or not job.role:
-        return "Enter both a company and a role."
+        return messages.REQUIRED_FIELDS
     if job.platform and not is_valid_posting_url(job.platform):
-        return (
-            "Enter a posting URL that starts with http:// or https:// "
-            "and includes a valid host, or leave it empty."
-        )
+        return messages.INVALID_POSTING_URL
     return None
 
 
@@ -86,7 +84,7 @@ def show_job_form(saved_jobs: list[Job]) -> None:
             job = next((job for job in saved_jobs if job.id == job_id), None)
             if job is None:
                 close_job_form()
-                st.info("This job is no longer available to edit.")
+                st.info(messages.EDIT_JOB_UNAVAILABLE)
                 return
             load_draft(job)
     # Once a draft exists it stays open; saving reports a job that has vanished.
@@ -171,21 +169,14 @@ def job_form_body(job_id: str | None) -> None:
                     else:
                         storage.update_job(saved_job)
             except JobNotFoundError:
-                st.error(
-                    "This job is no longer saved, so your changes were not applied. "
-                    "Copy anything you need, then cancel and reload the board."
-                )
+                st.error(messages.JOB_NOT_FOUND_ON_SAVE)
             except sqlite3.Error, OSError:
-                st.error(
-                    "Could not save this job. Your entries are still in the form. "
-                    "Check that the data folder is writable and the database "
-                    "is not locked, then click Submit again."
-                )
+                st.error(messages.SAVE_FAILED)
             else:
                 st.session_state.job_saved_message = (
-                    f"Job added to {selected_status.value}."
+                    messages.job_added(selected_status)
                     if job_id is None
-                    else f"Job updated in {selected_status.value}."
+                    else messages.job_updated(selected_status)
                 )
                 close_job_form()
                 st.rerun()

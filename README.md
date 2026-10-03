@@ -137,13 +137,46 @@ uv run python -m pytest tests/test_backup.py -q
 ```
 
 
+### how do I view and edit a job?
+
+- **Open details:** click **View details** on a card. A details panel opens to
+  the right of the board, which narrows to make room. On narrow screens the
+  columns stack and the panel appears after the Closed column, so scroll down
+  to it. Choosing another card replaces the panel; **Close details** restores
+  the full-width board. Searching does not close the panel, even if the job's
+  card is filtered out.
+- **Posting link:** the posting URL appears as **Open original posting** only if
+  it is an `http://` or `https://` URL with a host. Anything else is shown as
+  plain text with a hint, never as a clickable link.
+- **Notes:** optional, multiline, and shown as plain text in the panel (Markdown
+  is not interpreted). Cards do not show notes.
+- **Edit:** click **Edit job** at the bottom of the panel. The form opens with
+  the saved values. **Submit** updates that job in place: it keeps its ID and
+  its position within its column, and moves to another column if you changed
+  its status. **Cancel**, the dialog's X, or Escape discards the draft; the
+  next Edit or Add always starts from fresh values.
+- **Status rules on save** (create and edit): Interested clears the application
+  date, stage, and outcome; Active keeps the date and stage and clears the
+  outcome; Closed keeps the date and outcome and clears the stage. The form
+  states this above the date field.
+- **Validation:** company and role are required (surrounding spaces are
+  trimmed). The posting URL may be empty; otherwise it must pass the same
+  `http(s)` rule as the link. If saving fails, your draft stays in the form
+  with an error and nothing is changed.
+
+The panel is a native Streamlit column beside the board, not the overlay
+drawer in `designs/job_tracker_detail_drawer.excalidraw`: it resizes the board
+instead of covering it. Cards still show company above role and include the
+posting URL as text, unlike the drawing's role-first cards.
+
 ### what does persistence cover?
 
-Saved jobs retain their IDs, company, role, location, tags, selected status, and
-relevant application details, posting URL, and optional multiline notes. Notes
-appear as plain text in the detail panel. Existing databases automatically gain
-the notes column without replacing saved jobs. The board derives columns and counts from those
-records. Search text, popup visibility, and unsaved form entries are temporary.
+Saved jobs retain their IDs, company, role, location, tags, selected status,
+relevant application details, posting URL, and optional multiline notes,
+including after edits. Existing databases automatically gain the notes column
+without replacing saved jobs. The board derives columns and counts from those
+records. Search text, the open details panel, form visibility, and unsaved
+drafts are temporary and are not restored after a restart.
 
 App sessions on this machine share `data/jobs.sqlite3`. A full rerun reads the
 latest committed jobs, but there is no live synchronization between browser
@@ -177,3 +210,18 @@ snapshot into a separate database and verify the saved records.
 
 The manual browser/Streamlit server stop-start check was confirmed complete
 by the user on 2026-10-02. Milestone 2 verification is complete.
+
+Milestone 3 adds automated checks for selecting, closing, and switching details;
+posting links; notes; prefilled edit forms; updates that keep ID, count, and
+order; status rules; status changes under an active search; validation;
+failed-save retry; missing jobs; and edits surviving a separate process and a
+backup restore.
+
+On 2026-10-03 a headless Chrome run, driven by Playwright against a disposable copy
+of the app with fictional jobs, checked: the panel on the right at 1440 px; a
+long company name wrapping inside the panel; the posting link target; Edit
+prefill; Escape and X discarding a draft; Tab reaching **Edit job** and Enter
+opening it; saving, refreshing the panel, and showing a success message; the invalid-URL
+error keeping the draft; and at 390 px, the panel stacking below the columns
+with no horizontal overflow. A human visual pass in a regular browser window
+is still pending.

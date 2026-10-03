@@ -10,7 +10,7 @@ import pytest
 from assertpy import assert_that
 from streamlit.testing.v1 import AppTest
 
-from src import job_form, storage
+from src import job_form, messages, storage
 from src.schema import ApplicationStatus, Job
 from src.storage import Storage
 
@@ -151,7 +151,7 @@ class TestDashboard:
 
         assert_that(
             (error, jobs, app.session_state.job_form_open, list(app.exception))
-        ).is_equal_to(("Enter both a company and a role.", [], False, []))
+        ).is_equal_to((messages.REQUIRED_FIELDS, [], False, []))
 
     @pytest.mark.parametrize("error", [sqlite3.OperationalError, OSError])
     def test_failed_save_preserves_draft(
@@ -200,11 +200,7 @@ class TestDashboard:
 
         assert_that(([e.value for e in app.error], list(app.success))).is_equal_to(
             (
-                [
-                    "Could not save this job. Your entries are still in the form. "
-                    "Check that the data folder is writable and the database "
-                    "is not locked, then click Submit again."
-                ],
+                [messages.SAVE_FAILED],
                 [],
             )
         )
@@ -274,11 +270,7 @@ class TestDashboard:
         ).is_equal_to(
             (
                 [],
-                [
-                    "Could not open or read the jobs database. "
-                    "Check that the data folder is accessible and writable, "
-                    "then reload the app."
-                ],
+                [messages.DATABASE_UNREADABLE],
                 [],
                 [],
             )
@@ -298,10 +290,7 @@ class TestDashboard:
         ).is_equal_to(
             (
                 [],
-                [
-                    "The jobs database contains an invalid date or status. "
-                    "Check the stored data or restore a known-good backup."
-                ],
+                [messages.DATABASE_INVALID],
                 [],
             )
         )
@@ -329,7 +318,7 @@ class TestDashboard:
             jobs = database.load_jobs()
 
         assert_that((jobs, [e.value for e in app.error])).is_equal_to(
-            ([], ["Enter both a company and a role."])
+            ([], [messages.REQUIRED_FIELDS])
         )
 
     def test_header_opens_fresh_form_after_save(self, app: AppTest) -> None:
@@ -454,9 +443,7 @@ class TestDashboard:
         ).is_equal_to(
             (
                 None,
-                [
-                    "This job is no longer available. Select another job to view its details."
-                ],
+                [messages.SELECTED_JOB_UNAVAILABLE],
                 [],
             )
         )
@@ -685,7 +672,7 @@ class TestDashboard:
             (
                 [],
                 url,
-                "This posting link needs an HTTP or HTTPS URL with a valid host.",
+                messages.INVALID_POSTING_LINK,
                 url,
                 [],
             )
@@ -875,8 +862,7 @@ class TestEditForm:
         assert_that(
             (
                 app.session_state.job_form_open,
-                "This job is no longer available to edit."
-                in [i.value for i in app.info],
+                messages.EDIT_JOB_UNAVAILABLE in [i.value for i in app.info],
                 list(app.exception),
             )
         ).is_equal_to((False, True, []))
@@ -931,7 +917,13 @@ class TestSaveEdits:
                 list(app.exception),
             )
         ).is_equal_to(
-            (ACTIVE_JOB.id, False, ["Renamed"], ["Job updated in Active."], [])
+            (
+                ACTIVE_JOB.id,
+                False,
+                ["Renamed"],
+                [messages.job_updated(ApplicationStatus.ACTIVE)],
+                [],
+            )
         )
 
     def test_status_change_moves_card_and_counts(
@@ -1017,7 +1009,7 @@ class TestSaveEdits:
                 [e.value for e in app.error],
                 app.session_state.job_form_open,
             )
-        ).is_equal_to(([ACTIVE_JOB], ["Enter both a company and a role."], True))
+        ).is_equal_to(([ACTIVE_JOB], [messages.REQUIRED_FIELDS], True))
 
     @pytest.mark.parametrize(
         "url",
@@ -1042,10 +1034,7 @@ class TestSaveEdits:
         ).is_equal_to(
             (
                 [ACTIVE_JOB],
-                [
-                    "Enter a posting URL that starts with http:// or https:// "
-                    "and includes a valid host, or leave it empty."
-                ],
+                [messages.INVALID_POSTING_URL],
                 url,
                 [],
             )
@@ -1110,10 +1099,7 @@ class TestSaveEdits:
         ).is_equal_to(
             (
                 [],
-                [
-                    "This job is no longer saved, so your changes were not applied. "
-                    "Copy anything you need, then cancel and reload the board."
-                ],
+                [messages.JOB_NOT_FOUND_ON_SAVE],
                 [],
             )
         )
@@ -1128,3 +1114,79 @@ class TestSaveEdits:
         assert_that(
             [(j.company, j.id == ACTIVE_JOB.id) for j in load(db_path)]
         ).is_equal_to([("Example", True), ("New", False)])
+
+    def test_status_change_under_search_moves_card(
+        self, app: AppTest, db_path: Path
+    ) -> None:
+        seed(db_path, ACTIVE_JOB, OTHER_JOB)
+        app.run()
+        app.text_input[0].set_value("example").run()
+        app.button(key=f"job_{ACTIVE_JOB.id}").click().run()
+        app.button(key="edit_job").click().run()
+        app.selectbox(key="job_draft_status").set_value(ApplicationStatus.INTERESTED)
+
+        click_submit(app)
+
+        assert_that(
+            (
+                app.text_input[0].value,
+                [m.value for m in app.markdown if "-badge[" in m.value][:3],
+                [h.value for h in app.subheader],
+                list(app.exception),
+            )
+        ).is_equal_to(
+            (
+                "example",
+                [":yellow-badge[1]", ":blue-badge[0]", ":red-badge[0]"],
+                ["Example", "Example"],
+                [],
+            )
+        )
+
+    def test_retry_after_failed_update_saves_once(
+        self, app: AppTest, db_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        seed(db_path, ACTIVE_JOB, OTHER_JOB)
+        open_edit(app, ACTIVE_JOB)
+        fill_text_fields(app, {"Company": "Renamed"})
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                Storage,
+                "update_job",
+                Mock(side_effect=sqlite3.OperationalError("Simulated failure")),
+            )
+            click_submit(app)
+
+        click_submit(app)
+
+        assert_that(
+            (
+                load(db_path),
+                app.session_state.job_form_open,
+                [s.value for s in app.success],
+            )
+        ).is_equal_to(
+            (
+                [replace(ACTIVE_JOB, company="Renamed"), OTHER_JOB],
+                False,
+                [messages.job_updated(ApplicationStatus.ACTIVE)],
+            )
+        )
+
+    def test_dismissed_form_state_saves_nothing(
+        self, app: AppTest, db_path: Path
+    ) -> None:
+        seed(db_path, ACTIVE_JOB)
+        open_edit(app, ACTIVE_JOB)
+        app.text_input(key="job_draft_company").set_value("Unsaved")
+
+        app.session_state.job_form_open = False
+        app.run()
+
+        assert_that(
+            (
+                load(db_path),
+                app.session_state.selected_job_id,
+                [w.key for w in app.text_input if w.key == "job_draft_company"],
+            )
+        ).is_equal_to(([ACTIVE_JOB], ACTIVE_JOB.id, []))

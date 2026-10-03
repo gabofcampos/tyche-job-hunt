@@ -1,6 +1,7 @@
 import pytest
 from assertpy import assert_that
 
+from src import messages
 from src.job_form import validate_job
 from src.schema import ApplicationStatus, Job
 
@@ -26,7 +27,7 @@ class TestValidateJob:
 
         error = validate_job(candidate)
 
-        assert_that(error).is_equal_to("Enter both a company and a role.")
+        assert_that(error).is_equal_to(messages.REQUIRED_FIELDS)
 
     @pytest.mark.parametrize("platform", ["example.com", "ftp://example.com/job"])
     def test_invalid_posting_url_is_rejected(self, platform: str) -> None:
@@ -34,11 +35,11 @@ class TestValidateJob:
 
         error = validate_job(candidate)
 
-        assert_that(error).starts_with("Enter a posting URL")
+        assert_that(error).is_equal_to(messages.INVALID_POSTING_URL)
 
     def test_required_fields_are_checked_before_url(self) -> None:
         candidate = job(company="", platform="example.com")
 
         error = validate_job(candidate)
 
-        assert_that(error).is_equal_to("Enter both a company and a role.")
+        assert_that(error).is_equal_to(messages.REQUIRED_FIELDS)

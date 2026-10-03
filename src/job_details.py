@@ -1,8 +1,9 @@
 import streamlit as st
 
+from src import messages
 from src.job_form import open_edit_form
-from src.presentation import STATUS_COLORS
-from src.schema import ApplicationStatus, Job, is_valid_posting_url
+from src.presentation import STATUS_COLORS, application_details
+from src.schema import Job, is_valid_posting_url
 
 
 def close_job_details() -> None:
@@ -20,19 +21,9 @@ def render_job_details(job: Job) -> None:
         st.text(job.role)
         st.badge(job.status.value, color=STATUS_COLORS[job.status])
 
-        if job.status != ApplicationStatus.INTERESTED:
-            st.caption("Application")
-            if job.applied_on is not None:
-                st.text(f"Applied {job.applied_on:%d %b %Y}")
-            else:
-                st.text("No application date provided.")
-
-        if job.status == ApplicationStatus.ACTIVE:
-            st.caption("Stage")
-            st.text(job.stage or "No stage provided.")
-        elif job.status == ApplicationStatus.CLOSED:
-            st.caption("Outcome")
-            st.text(job.outcome or "No outcome provided.")
+        for label, value in application_details(job):
+            st.caption(label)
+            st.text(value)
 
         st.caption("Location")
         st.text(job.location or "No location provided.")
@@ -53,9 +44,7 @@ def render_job_details(job: Job) -> None:
             st.link_button("Open original posting", posting_url)
         else:
             st.text(job.platform)
-            st.caption(
-                "This posting link needs an HTTP or HTTPS URL with a valid host."
-            )
+            st.caption(messages.INVALID_POSTING_LINK)
 
         st.caption("Notes")
         if job.notes:

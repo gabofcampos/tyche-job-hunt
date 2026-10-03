@@ -2,6 +2,7 @@ import sqlite3
 
 import streamlit as st
 
+from src import messages
 from src.job_cards import render_job_card, render_no_jobs
 from src.job_details import render_job_details
 from src.job_form import open_job_form, show_job_form
@@ -20,17 +21,10 @@ try:
         storage.initialize_database()
         all_jobs = storage.load_jobs()
 except sqlite3.Error, OSError:
-    st.error(
-        "Could not open or read the jobs database. "
-        "Check that the data folder is accessible and writable, "
-        "then reload the app."
-    )
+    st.error(messages.DATABASE_UNREADABLE)
     st.stop()
 except ValueError:
-    st.error(
-        "The jobs database contains an invalid date or status. "
-        "Check the stored data or restore a known-good backup."
-    )
+    st.error(messages.DATABASE_INVALID)
     st.stop()
 
 if "job_form_open" not in st.session_state:
@@ -87,7 +81,7 @@ selected_job_id = st.session_state.get("selected_job_id")
 selected_job = next((job for job in all_jobs if job.id == selected_job_id), None)
 if selected_job_id is not None and selected_job is None:
     st.session_state.selected_job_id = None
-    st.info("This job is no longer available. Select another job to view its details.")
+    st.info(messages.SELECTED_JOB_UNAVAILABLE)
 
 if selected_job is not None:
     board_area, details_area = st.columns([2, 1], gap="medium")
