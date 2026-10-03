@@ -19,6 +19,7 @@ def source(tmp_path: Path) -> Path:
             storage.insert_job(
                 Job(
                     company=f"Fictional {status.value}",
+                    notes="First line\nSecond line",
                     role="Engineer",
                     location="Remote",
                     tags="Python, SQL",

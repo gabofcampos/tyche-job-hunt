@@ -581,3 +581,133 @@ class TestDashboard:
                 list(app.exception),
             )
         ).is_equal_to((2, original_columns, None, []))
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://example.com/jobs/1",
+            "http://example.com/job?q=python",
+            "  https://example.com/jobs  ",
+        ],
+    )
+    def test_posting_link_uses_trimmed_url(
+        self, app: AppTest, db_path: Path, url: str
+    ) -> None:
+        job = Job(
+            "Example", "Developer", "", "", ApplicationStatus.INTERESTED, platform=url
+        )
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+
+        app.button(key=f"job_{job.id}").click().run()
+        links = app.get_by_key("job_details").get("link_button")
+        with Storage(db_path) as database:
+            stored_url = database.load_jobs()[0].platform
+
+        assert_that(
+            (
+                [(link.proto.label, link.proto.url) for link in links],
+                stored_url,
+                list(app.exception),
+            )
+        ).is_equal_to(([("Open original posting", url.strip())], url, []))
+
+    @pytest.mark.parametrize("url", ["", "   "])
+    def test_missing_posting_url_has_no_link(
+        self, app: AppTest, db_path: Path, url: str
+    ) -> None:
+        job = Job(
+            "Example", "Developer", "", "", ApplicationStatus.INTERESTED, platform=url
+        )
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+
+        app.button(key=f"job_{job.id}").click().run()
+        panel = app.get_by_key("job_details")
+
+        assert_that(
+            (
+                list(panel.get("link_button")),
+                next(
+                    c.value
+                    for c in panel.caption
+                    if c.value.startswith(("No posting", "This posting"))
+                ),
+            )
+        ).is_equal_to(([], "No posting link."))
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "javascript:alert(1)",
+            "ftp://example.com/job",
+            "example.com",
+            "https:///jobs",
+            "https://[broken",
+            "https://example.com:bad",
+            "https://example .com",
+            "https://example.com/\njob",
+            "https://example.com\\job",
+        ],
+    )
+    def test_invalid_posting_url_is_plain_text(
+        self, app: AppTest, db_path: Path, url: str
+    ) -> None:
+        job = Job(
+            "Example", "Developer", "", "", ApplicationStatus.INTERESTED, platform=url
+        )
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+
+        app.button(key=f"job_{job.id}").click().run()
+        panel = app.get_by_key("job_details")
+        with Storage(db_path) as database:
+            stored_url = database.load_jobs()[0].platform
+
+        assert_that(
+            (
+                list(panel.get("link_button")),
+                panel.text[-1].value,
+                next(
+                    c.value
+                    for c in panel.caption
+                    if c.value.startswith(("No posting", "This posting"))
+                ),
+                stored_url,
+                list(app.exception),
+            )
+        ).is_equal_to(
+            (
+                [],
+                url,
+                "This posting link needs an HTTP or HTTPS URL with a valid host.",
+                url,
+                [],
+            )
+        )
+
+    @pytest.mark.parametrize(
+        "notes", ["First line\nSecond line with **literal** text", ""]
+    )
+    def test_notes_survive_new_session_and_display(
+        self, app: AppTest, db_path: Path, notes: str
+    ) -> None:
+        app.button(key="add_job").click().run()
+        app.text_area[0].set_value(notes)
+        submit(app, "Example", "Developer")
+        with Storage(db_path) as database:
+            saved = database.load_jobs()[0]
+
+        fresh = AppTest.from_file(
+            str(Path(__file__).resolve().parents[1] / "src/app.py")
+        ).run()
+        fresh.button(key=f"job_{saved.id}").click().run()
+        panel = fresh.get_by_key("job_details")
+        displayed = panel.text[-1].value if notes else panel.caption[-1].value
+
+        assert_that((saved.notes, displayed, list(fresh.exception))).is_equal_to(
+            (notes, notes or "No notes provided.", [])
+        )

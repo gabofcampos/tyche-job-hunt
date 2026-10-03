@@ -140,7 +140,9 @@ uv run python -m pytest tests/test_backup.py -q
 ### what does persistence cover?
 
 Saved jobs retain their IDs, company, role, location, tags, selected status, and
-relevant application details. The board derives columns and counts from those
+relevant application details, posting URL, and optional multiline notes. Notes
+appear as plain text in the detail panel. Existing databases automatically gain
+the notes column without replacing saved jobs. The board derives columns and counts from those
 records. Search text, popup visibility, and unsaved form entries are temporary.
 
 App sessions on this machine share `data/jobs.sqlite3`. A full rerun reads the

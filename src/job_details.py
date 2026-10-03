@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 import streamlit as st
 
 from src.presentation import STATUS_COLORS
@@ -43,3 +45,37 @@ def render_job_details(job: Job) -> None:
                     st.badge(tag, color="gray")
         else:
             st.text("No tags provided.")
+
+        st.caption("Job posting")
+        posting_url = job.platform.strip()
+        if not posting_url:
+            st.caption("No posting link.")
+        else:
+            try:
+                parsed = urlsplit(posting_url)
+                valid_url = (
+                    parsed.scheme in {"http", "https"}
+                    and bool(parsed.hostname)
+                    and not any(
+                        char.isspace() or ord(char) < 32 for char in posting_url
+                    )
+                    and "\\" not in posting_url
+                )
+                # Accessing port also validates non-numeric and out-of-range ports.
+                parsed.port
+            except ValueError:
+                valid_url = False
+
+            if valid_url:
+                st.link_button("Open original posting", posting_url)
+            else:
+                st.text(job.platform)
+                st.caption(
+                    "This posting link needs an HTTP or HTTPS URL with a valid host."
+                )
+
+        st.caption("Notes")
+        if job.notes:
+            st.text(job.notes)
+        else:
+            st.caption("No notes provided.")

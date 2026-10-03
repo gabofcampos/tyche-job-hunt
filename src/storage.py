@@ -50,7 +50,8 @@ class Storage:
                     applied_on TEXT,
                     stage TEXT,
                     outcome TEXT,
-                    platform TEXT NOT NULL DEFAULT ''
+                    platform TEXT NOT NULL DEFAULT '',
+                    notes TEXT NOT NULL DEFAULT ''
                 )
             """)
             columns = {
@@ -61,6 +62,10 @@ class Storage:
                 self._connection.execute(
                     "ALTER TABLE jobs ADD COLUMN platform TEXT NOT NULL DEFAULT ''"
                 )
+            if "notes" not in columns:
+                self._connection.execute(
+                    "ALTER TABLE jobs ADD COLUMN notes TEXT NOT NULL DEFAULT ''"
+                )
 
     def insert_job(self, job: Job) -> None:
         with self._connection:
@@ -68,8 +73,8 @@ class Storage:
                 """
                 INSERT INTO jobs (
                     id, company, role, location, tags, status,
-                    applied_on, stage, outcome, platform
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    applied_on, stage, outcome, platform, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     job.id,
@@ -82,6 +87,7 @@ class Storage:
                     job.stage,
                     job.outcome,
                     job.platform,
+                    job.notes,
                 ),
             )
 
@@ -89,7 +95,7 @@ class Storage:
         with self._connection:
             rows = self._connection.execute("""
                 SELECT id, company, role, location, tags, status,
-                       applied_on, stage, outcome, platform
+                       applied_on, stage, outcome, platform, notes
                 FROM jobs
                 ORDER BY rowid ASC
                 """).fetchall()
@@ -110,6 +116,7 @@ class Storage:
                 stage=row["stage"],
                 outcome=row["outcome"],
                 platform=row["platform"],
+                notes=row["notes"],
             )
             for row in rows
         ]

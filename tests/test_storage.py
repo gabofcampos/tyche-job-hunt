@@ -164,3 +164,46 @@ class TestStorage:
             jobs = database.load_jobs()
 
         assert_that(jobs).is_equal_to([expected])
+
+    def test_notes_migration_preserves_platform_and_is_repeatable(
+        self, tmp_path: Path
+    ) -> None:
+        path = tmp_path / "pre-notes.sqlite3"
+        with closing(sqlite3.connect(path)) as connection:
+            with connection:
+                connection.execute(
+                    "CREATE TABLE jobs (id TEXT PRIMARY KEY, company TEXT, role TEXT, location TEXT, tags TEXT, status TEXT, applied_on TEXT, stage TEXT, outcome TEXT, platform TEXT NOT NULL DEFAULT '')"
+                )
+                connection.execute(
+                    "INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        "old-id",
+                        "Example",
+                        "Developer",
+                        "Remote",
+                        "Python",
+                        "Active",
+                        "2026-09-12",
+                        "Interview",
+                        None,
+                        "https://example.com/job",
+                    ),
+                )
+        expected = Job(
+            "Example",
+            "Developer",
+            "Remote",
+            "Python",
+            ApplicationStatus.ACTIVE,
+            date(2026, 9, 12),
+            "Interview",
+            id="old-id",
+            platform="https://example.com/job",
+        )
+
+        with Storage(path) as database:
+            database.initialize_database()
+            database.initialize_database()
+            jobs = database.load_jobs()
+
+        assert_that(jobs).is_equal_to([expected])

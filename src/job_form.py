@@ -62,6 +62,8 @@ def show_job_form() -> None:
             placeholder="Select an outcome (optional)",
         )
 
+        notes = st.text_area("Notes (optional)")
+
         with st.container(horizontal=True):
             submitted = st.form_submit_button("Submit")
             cancelled = st.form_submit_button("Cancel", key="cancel_job_form")
@@ -76,6 +78,7 @@ def show_job_form() -> None:
             company=company,
             role=role,
             platform=platform.strip(),
+            notes=notes.strip(),
             location=location.strip(),
             tags=tags.strip(),
             status=selected_status,

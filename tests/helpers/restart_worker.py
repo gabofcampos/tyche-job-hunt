@@ -36,6 +36,7 @@ def main() -> None:
             for widget in app.text_input:
                 if widget.label in values:
                     widget.set_value(values[widget.label])
+            app.text_area[0].set_value("Fictional notes\nSecond line")
             app.date_input[0].set_value(date(2026, 9, 12))
             app.selectbox[1].select("Technical interview")
             app.selectbox[2].select("Withdrawn")
