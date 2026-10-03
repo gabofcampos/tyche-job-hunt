@@ -1,8 +1,10 @@
+import sqlite3
 from pathlib import Path
 
 import streamlit as st
 
-from schema import ApplicationStatus, Job
+from src.schema import ApplicationStatus, Job
+from src.storage import Storage
 
 
 def open_job_form(status: ApplicationStatus = ApplicationStatus.INTERESTED) -> None:
@@ -70,32 +72,34 @@ def show_job_form() -> None:
     if submitted:
         company = company.strip()
         role = role.strip()
+        job = Job(
+            company=company,
+            role=role,
+            platform=platform.strip(),
+            location=location.strip(),
+            tags=tags.strip(),
+            status=selected_status,
+            applied_on=(
+                applied_on if selected_status != ApplicationStatus.INTERESTED else None
+            ),
+            stage=(stage if selected_status == ApplicationStatus.ACTIVE else None),
+            outcome=(outcome if selected_status == ApplicationStatus.CLOSED else None),
+        )
         if not company or not role:
             st.error("Enter both a company and a role.")
         else:
-            st.session_state.jobs.append(
-                Job(
-                    company=company,
-                    role=role,
-                    platform=platform.strip(),
-                    location=location.strip(),
-                    tags=tags.strip(),
-                    status=selected_status,
-                    applied_on=(
-                        applied_on
-                        if selected_status != ApplicationStatus.INTERESTED
-                        else None
-                    ),
-                    stage=(
-                        stage if selected_status == ApplicationStatus.ACTIVE else None
-                    ),
-                    outcome=(
-                        outcome if selected_status == ApplicationStatus.CLOSED else None
-                    ),
+            try:
+                with Storage() as storage:
+                    storage.insert_job(job)
+            except (sqlite3.Error, OSError):
+                st.error(
+                    "Could not save this job. Your entries are still in the form. "
+                    "Check that the data folder is writable and the database "
+                    "is not locked, then click Submit again."
                 )
-            )
-            st.session_state.job_added_message = (
-                f"Job added to {selected_status.value}."
-            )
-            close_job_form()
-            st.rerun()
+            else:
+                st.session_state.job_added_message = (
+                    f"Job added to {selected_status.value}."
+                )
+                close_job_form()
+                st.rerun()
