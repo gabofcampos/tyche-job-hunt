@@ -12,7 +12,7 @@ DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "jobs.sqlite
 
 class Storage:
     """
-    Own one SQLite connection; 
+    Own one SQLite connection;
     each operation manages its transaction.
     """
 
@@ -49,9 +49,18 @@ class Storage:
                     ),
                     applied_on TEXT,
                     stage TEXT,
-                    outcome TEXT
+                    outcome TEXT,
+                    platform TEXT NOT NULL DEFAULT ''
                 )
             """)
+            columns = {
+                row["name"]
+                for row in self._connection.execute("PRAGMA table_info(jobs)")
+            }
+            if "platform" not in columns:
+                self._connection.execute(
+                    "ALTER TABLE jobs ADD COLUMN platform TEXT NOT NULL DEFAULT ''"
+                )
 
     def insert_job(self, job: Job) -> None:
         with self._connection:
@@ -59,8 +68,8 @@ class Storage:
                 """
                 INSERT INTO jobs (
                     id, company, role, location, tags, status,
-                    applied_on, stage, outcome
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    applied_on, stage, outcome, platform
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     job.id,
@@ -72,6 +81,7 @@ class Storage:
                     job.applied_on.isoformat() if job.applied_on is not None else None,
                     job.stage,
                     job.outcome,
+                    job.platform,
                 ),
             )
 
@@ -79,7 +89,7 @@ class Storage:
         with self._connection:
             rows = self._connection.execute("""
                 SELECT id, company, role, location, tags, status,
-                       applied_on, stage, outcome
+                       applied_on, stage, outcome, platform
                 FROM jobs
                 ORDER BY rowid ASC
                 """).fetchall()
@@ -99,6 +109,7 @@ class Storage:
                 ),
                 stage=row["stage"],
                 outcome=row["outcome"],
+                platform=row["platform"],
             )
             for row in rows
         ]

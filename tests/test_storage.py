@@ -132,3 +132,35 @@ class TestStorage:
         jobs = storage.load_jobs()
 
         assert_that(jobs).is_equal_to([original, subsequent])
+
+    def test_legacy_database_migration_preserves_job(self, tmp_path: Path) -> None:
+        path = tmp_path / "legacy.sqlite3"
+        with closing(sqlite3.connect(path)) as connection:
+            with connection:
+                connection.execute(
+                    "CREATE TABLE jobs (id TEXT PRIMARY KEY, company TEXT, role TEXT, location TEXT, tags TEXT, status TEXT, applied_on TEXT, stage TEXT, outcome TEXT)"
+                )
+                connection.execute(
+                    "INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        "old-id",
+                        "Example",
+                        "Developer",
+                        "",
+                        "",
+                        "Interested",
+                        None,
+                        None,
+                        None,
+                    ),
+                )
+        expected = Job(
+            "Example", "Developer", "", "", ApplicationStatus.INTERESTED, id="old-id"
+        )
+
+        with Storage(path) as database:
+            database.initialize_database()
+            database.initialize_database()
+            jobs = database.load_jobs()
+
+        assert_that(jobs).is_equal_to([expected])

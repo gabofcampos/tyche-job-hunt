@@ -22,6 +22,7 @@ def show_job_form() -> None:
     with st.form("job_form", border=False):
         company = st.text_input("Company")
         role = st.text_input("Role")
+        platform = st.text_input("Job search platform (URL)")
         location = st.text_input("Location (optional)")
         tags = st.text_input("Tags (optional)", placeholder="Python, SQL")
         selected_status = st.selectbox(
@@ -74,24 +75,15 @@ def show_job_form() -> None:
         job = Job(
             company=company,
             role=role,
+            platform=platform.strip(),
             location=location.strip(),
             tags=tags.strip(),
             status=selected_status,
             applied_on=(
-                applied_on
-                if selected_status != ApplicationStatus.INTERESTED
-                else None
+                applied_on if selected_status != ApplicationStatus.INTERESTED else None
             ),
-            stage=(
-                stage
-                if selected_status == ApplicationStatus.ACTIVE
-                else None
-            ),
-            outcome=(
-                outcome
-                if selected_status == ApplicationStatus.CLOSED
-                else None
-            ),
+            stage=(stage if selected_status == ApplicationStatus.ACTIVE else None),
+            outcome=(outcome if selected_status == ApplicationStatus.CLOSED else None),
         )
         if not company or not role:
             st.error("Enter both a company and a role.")

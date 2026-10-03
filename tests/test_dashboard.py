@@ -178,7 +178,7 @@ class TestDashboard:
             (
                 [],
                 True,
-                ["Example", "Developer", "Remote", "Python, SQL"],
+                ["Example", "Developer", "", "Remote", "Python, SQL"],
                 [ApplicationStatus.ACTIVE, "Technical interview", None],
                 date(2026, 9, 12),
             )
@@ -344,5 +344,28 @@ class TestDashboard:
                 app.date_input[0].value,
             )
         ).is_equal_to(
-            (["", "", "", ""], [ApplicationStatus.INTERESTED, None, None], None)
+            (["", "", "", "", ""], [ApplicationStatus.INTERESTED, None, None], None)
+        )
+
+    def test_platform_survives_new_session(self, app: AppTest, db_path: Path) -> None:
+        app.button(key="add_job").click().run()
+        fill_text_fields(
+            app, {"Job search platform (URL)": " https://example.com/jobs "}
+        )
+        submit(app, "Example", "Developer")
+
+        fresh = AppTest.from_file(
+            str(Path(__file__).resolve().parents[1] / "src/app.py")
+        ).run()
+        with Storage(db_path) as database:
+            jobs = database.load_jobs()
+
+        assert_that(
+            (jobs[0].platform, [t.value for t in fresh.text], list(fresh.exception))
+        ).is_equal_to(
+            (
+                "https://example.com/jobs",
+                ["Developer", "Job search platform: https://example.com/jobs"],
+                [],
+            )
         )
