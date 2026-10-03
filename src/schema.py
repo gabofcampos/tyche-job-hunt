@@ -21,3 +21,4 @@ class Job:
     stage: str | None = None
     outcome: str | None = None
     id: str = field(default_factory=lambda: str(uuid4()))
+    platform: str = ""
