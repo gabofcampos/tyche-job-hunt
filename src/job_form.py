@@ -91,7 +91,7 @@ def show_job_form() -> None:
             try:
                 with Storage() as storage:
                     storage.insert_job(job)
-            except (sqlite3.Error, OSError):
+            except sqlite3.Error, OSError:
                 st.error(
                     "Could not save this job. Your entries are still in the form. "
                     "Check that the data folder is writable and the database "

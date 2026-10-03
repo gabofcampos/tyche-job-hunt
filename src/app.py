@@ -2,7 +2,8 @@ import sqlite3
 
 import streamlit as st
 
-from src.job_cards import render_job_card, render_job_details, render_no_jobs
+from job_details import render_job_details
+from src.job_cards import render_job_card, render_no_jobs
 from src.job_form import open_job_form, show_job_form
 from src.schema import ApplicationStatus
 from src.storage import Storage
