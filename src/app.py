@@ -63,10 +63,10 @@ with st.container(border=True):
         )
 
 if st.session_state.get("job_form_open", False):
-    show_job_form()
+    show_job_form(all_jobs)
 
-if "job_added_message" in st.session_state:
-    st.success(st.session_state.pop("job_added_message"))
+if "job_saved_message" in st.session_state:
+    st.success(st.session_state.pop("job_saved_message"))
 
 searched_for_jobs = [
     job

@@ -1,9 +1,8 @@
-from urllib.parse import urlsplit
-
 import streamlit as st
 
+from src.job_form import open_edit_form
 from src.presentation import STATUS_COLORS
-from src.schema import ApplicationStatus, Job
+from src.schema import ApplicationStatus, Job, is_valid_posting_url
 
 
 def close_job_details() -> None:
@@ -50,32 +49,25 @@ def render_job_details(job: Job) -> None:
         posting_url = job.platform.strip()
         if not posting_url:
             st.caption("No posting link.")
+        elif is_valid_posting_url(posting_url):
+            st.link_button("Open original posting", posting_url)
         else:
-            try:
-                parsed = urlsplit(posting_url)
-                valid_url = (
-                    parsed.scheme in {"http", "https"}
-                    and bool(parsed.hostname)
-                    and not any(
-                        char.isspace() or ord(char) < 32 for char in posting_url
-                    )
-                    and "\\" not in posting_url
-                )
-                # Accessing port also validates non-numeric and out-of-range ports.
-                parsed.port
-            except ValueError:
-                valid_url = False
-
-            if valid_url:
-                st.link_button("Open original posting", posting_url)
-            else:
-                st.text(job.platform)
-                st.caption(
-                    "This posting link needs an HTTP or HTTPS URL with a valid host."
-                )
+            st.text(job.platform)
+            st.caption(
+                "This posting link needs an HTTP or HTTPS URL with a valid host."
+            )
 
         st.caption("Notes")
         if job.notes:
             st.text(job.notes)
         else:
             st.caption("No notes provided.")
+
+        st.button(
+            "Edit job",
+            icon=":material/edit:",
+            key="edit_job",
+            width="stretch",
+            on_click=open_edit_form,
+            args=(job.id,),
+        )

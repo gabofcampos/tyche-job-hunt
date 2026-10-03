@@ -10,6 +10,10 @@ from src.schema import ApplicationStatus, Job
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "jobs.sqlite3"
 
 
+class JobNotFoundError(LookupError):
+    """Raised when an update targets an ID that is not stored."""
+
+
 class Storage:
     """
     Own one SQLite connection;
@@ -74,22 +78,29 @@ class Storage:
                 INSERT INTO jobs (
                     id, company, role, location, tags, status,
                     applied_on, stage, outcome, platform, notes
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (
+                    :id, :company, :role, :location, :tags, :status,
+                    :applied_on, :stage, :outcome, :platform, :notes
+                )
                 """,
-                (
-                    job.id,
-                    job.company,
-                    job.role,
-                    job.location,
-                    job.tags,
-                    job.status.value,
-                    job.applied_on.isoformat() if job.applied_on is not None else None,
-                    job.stage,
-                    job.outcome,
-                    job.platform,
-                    job.notes,
-                ),
+                job_to_params(job),
             )
+
+    def update_job(self, job: Job) -> None:
+        with self._connection:
+            cursor = self._connection.execute(
+                """
+                UPDATE jobs SET
+                    company = :company, role = :role, location = :location,
+                    tags = :tags, status = :status, applied_on = :applied_on,
+                    stage = :stage, outcome = :outcome, platform = :platform,
+                    notes = :notes
+                WHERE id = :id
+                """,
+                job_to_params(job),
+            )
+            if cursor.rowcount == 0:
+                raise JobNotFoundError(job.id)
 
     def load_jobs(self) -> list[Job]:
         with self._connection:
@@ -100,23 +111,43 @@ class Storage:
                 ORDER BY rowid ASC
                 """).fetchall()
 
-        return [
-            Job(
-                id=row["id"],
-                company=row["company"],
-                role=row["role"],
-                location=row["location"],
-                tags=row["tags"],
-                status=ApplicationStatus(row["status"]),
-                applied_on=(
-                    date.fromisoformat(row["applied_on"])
-                    if row["applied_on"] is not None
-                    else None
-                ),
-                stage=row["stage"],
-                outcome=row["outcome"],
-                platform=row["platform"],
-                notes=row["notes"],
-            )
-            for row in rows
-        ]
+        return [row_to_job(row) for row in rows]
+
+
+def job_to_params(job: Job) -> dict[str, str | None]:
+    """Map a Job to named SQL parameters; the inverse of row_to_job."""
+    return {
+        "id": job.id,
+        "company": job.company,
+        "role": job.role,
+        "location": job.location,
+        "tags": job.tags,
+        "status": job.status.value,
+        "applied_on": (
+            job.applied_on.isoformat() if job.applied_on is not None else None
+        ),
+        "stage": job.stage,
+        "outcome": job.outcome,
+        "platform": job.platform,
+        "notes": job.notes,
+    }
+
+
+def row_to_job(row: sqlite3.Row) -> Job:
+    return Job(
+        id=row["id"],
+        company=row["company"],
+        role=row["role"],
+        location=row["location"],
+        tags=row["tags"],
+        status=ApplicationStatus(row["status"]),
+        applied_on=(
+            date.fromisoformat(row["applied_on"])
+            if row["applied_on"] is not None
+            else None
+        ),
+        stage=row["stage"],
+        outcome=row["outcome"],
+        platform=row["platform"],
+        notes=row["notes"],
+    )

@@ -147,8 +147,9 @@ records. Search text, popup visibility, and unsaved form entries are temporary.
 
 App sessions on this machine share `data/jobs.sqlite3`. A full rerun reads the
 latest committed jobs, but there is no live synchronization between browser
-sessions and no authentication. Existing job editing, status changes, and deletion
-are not implemented.
+sessions and no authentication. Jobs can be edited from the detail panel,
+including status changes; edits keep the job's ID and board position, and the last
+successful save wins. Deletion is not implemented.
 
 The database and default backup paths are relative to the project location,
 not the shell working directory. Keeping the database file is necessary for
