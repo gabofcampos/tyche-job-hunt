@@ -28,6 +28,13 @@ def render_job_card(job: Job) -> None:
             if job.outcome:
                 st.caption(f"Outcome: {job.outcome}")
 
+        if st.button(
+            "View details",
+            key=f"job_{job.id}",
+            width="stretch",
+        ):
+            st.session_state.selected_job_id = job.id
+
 
 def render_no_jobs(
     application_status: ApplicationStatus, *, search_has_no_matches: bool = False
@@ -40,3 +47,12 @@ def render_no_jobs(
             )
         else:
             st.caption(f"No jobs in {application_status.value} yet.")
+
+
+def render_job_details(job: Job) -> None:
+    with st.container(border=True, key="job_details"):
+        st.subheader(job.company, anchor=False)
+        st.text(job.role)
+        if st.button("Close details", key="close_job_details"):
+            st.session_state.selected_job_id = None
+            st.rerun()

@@ -9,7 +9,7 @@ from assertpy import assert_that
 from streamlit.testing.v1 import AppTest
 
 from src import job_form, storage
-from src.schema import ApplicationStatus
+from src.schema import ApplicationStatus, Job
 from src.storage import Storage
 
 
@@ -366,6 +366,82 @@ class TestDashboard:
             (
                 "https://example.com/jobs",
                 ["Developer", "Job search platform: https://example.com/jobs"],
+                [],
+            )
+        )
+
+    def test_duplicate_cards_select_and_switch_by_id(
+        self, app: AppTest, db_path: Path
+    ) -> None:
+        first = Job("Example", "Developer", "", "", ApplicationStatus.INTERESTED)
+        second = Job("Example", "Developer", "", "", ApplicationStatus.INTERESTED)
+        with Storage(db_path) as database:
+            database.insert_job(first)
+            database.insert_job(second)
+        app.run()
+
+        app.button(key=f"job_{first.id}").click().run()
+        first_selection = app.session_state.selected_job_id
+        app.button(key=f"job_{second.id}").click().run()
+
+        assert_that(
+            (first_selection, app.session_state.selected_job_id, list(app.exception))
+        ).is_equal_to((first.id, second.id, []))
+
+    def test_search_hides_card_but_keeps_details(
+        self, app: AppTest, db_path: Path
+    ) -> None:
+        job = Job("Example", "Developer", "", "", ApplicationStatus.ACTIVE)
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+        app.button(key=f"job_{job.id}").click().run()
+
+        app.text_input[0].set_value("no-match").run()
+
+        assert_that(
+            (
+                app.session_state.selected_job_id,
+                [h.value for h in app.subheader],
+                [t.value for t in app.text],
+                list(app.exception),
+            )
+        ).is_equal_to((job.id, ["Example"], ["Developer"], []))
+
+    def test_close_clears_selection(self, app: AppTest, db_path: Path) -> None:
+        job = Job("Example", "Developer", "", "", ApplicationStatus.ACTIVE)
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+        app.button(key=f"job_{job.id}").click().run()
+
+        app.button(key="close_job_details").click().run()
+
+        assert_that(
+            (
+                app.session_state.selected_job_id,
+                [b.label for b in app.button if b.key == "close_job_details"],
+                list(app.exception),
+            )
+        ).is_equal_to((None, [], []))
+
+    def test_missing_selection_is_cleared_with_message(self, app: AppTest) -> None:
+        app.session_state.selected_job_id = "missing-job"
+
+        app.run()
+
+        assert_that(
+            (
+                app.session_state.selected_job_id,
+                [i.value for i in app.info],
+                list(app.exception),
+            )
+        ).is_equal_to(
+            (
+                None,
+                [
+                    "This job is no longer available. Select another job to view its details."
+                ],
                 [],
             )
         )

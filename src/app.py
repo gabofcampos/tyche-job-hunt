@@ -2,7 +2,7 @@ import sqlite3
 
 import streamlit as st
 
-from src.job_cards import render_job_card, render_no_jobs
+from src.job_cards import render_job_card, render_job_details, render_no_jobs
 from src.job_form import open_job_form, show_job_form
 from src.schema import ApplicationStatus
 from src.storage import Storage
@@ -17,7 +17,7 @@ try:
     with Storage() as storage:
         storage.initialize_database()
         all_jobs = storage.load_jobs()
-except (sqlite3.Error, OSError):
+except sqlite3.Error, OSError:
     st.error(
         "Could not open or read the jobs database. "
         "Check that the data folder is accessible and writable, "
@@ -113,3 +113,18 @@ for column, (status, description, color) in zip(
                 on_click=open_job_form,
                 args=(status,),
             )
+
+
+selected_job_id = st.session_state.get("selected_job_id")
+if selected_job_id is not None:
+    selected_job = next(
+        (job for job in all_jobs if job.id == selected_job_id),
+        None,
+    )
+    if selected_job is None:
+        st.session_state.selected_job_id = None
+        st.info(
+            "This job is no longer available. Select another job to view its details."
+        )
+    else:
+        render_job_details(selected_job)
