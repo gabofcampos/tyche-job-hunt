@@ -36,11 +36,24 @@ def main() -> None:
             for widget in app.text_input:
                 if widget.label in values:
                     widget.set_value(values[widget.label])
+            app.text_area[0].set_value("Fictional notes\nSecond line")
             app.date_input[0].set_value(date(2026, 9, 12))
             app.selectbox[1].select("Technical interview")
             app.selectbox[2].select("Withdrawn")
             next(b for b in app.button if b.label == "Submit").click().run()
             errors.extend(e.message for e in app.exception)
+    if mode == "edit":
+        with Storage(db_path) as instance:
+            edited = instance.load_jobs()[0]
+        app.button(key=f"job_{edited.id}").click().run()
+        app.button(key="edit_job").click().run()
+        app.text_input(key="job_draft_company").set_value("Fictional renamed")
+        app.selectbox(key="job_draft_status").set_value(ApplicationStatus.ACTIVE)
+        app.date_input(key="job_draft_applied_on").set_value(date(2026, 9, 20))
+        app.selectbox(key="job_draft_stage").select("Final interview")
+        app.text_area(key="job_draft_notes").set_value("Edited notes\nSecond line")
+        next(b for b in app.button if b.label == "Submit").click().run()
+        errors.extend(e.message for e in app.exception)
     with Storage(db_path) as instance:
         jobs = instance.load_jobs()
     snapshot = {

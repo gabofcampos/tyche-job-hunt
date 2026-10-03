@@ -1,4 +1,5 @@
 import sqlite3
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
@@ -19,6 +20,7 @@ def source(tmp_path: Path) -> Path:
             storage.insert_job(
                 Job(
                     company=f"Fictional {status.value}",
+                    notes="First line\nSecond line",
                     role="Engineer",
                     location="Remote",
                     tags="Python, SQL",
@@ -49,6 +51,26 @@ class TestBackup:
                 Job("Later job", "Developer", "", "", ApplicationStatus.INTERESTED)
             )
 
+        restored = copy_database(snapshot, tmp_path / "restored" / "jobs.sqlite3")
+        with Storage(restored) as storage:
+            jobs = storage.load_jobs()
+
+        assert_that(jobs).is_equal_to(expected)
+
+    def test_snapshot_restores_edited_job(self, source: Path, tmp_path: Path) -> None:
+        with Storage(source) as storage:
+            original = storage.load_jobs()
+            storage.update_job(
+                replace(
+                    original[0],
+                    company="Fictional renamed",
+                    platform="https://example.com/jobs/1",
+                    notes="Edited notes",
+                )
+            )
+            expected = storage.load_jobs()
+
+        snapshot = backup_database(source, tmp_path / "backups")
         restored = copy_database(snapshot, tmp_path / "restored" / "jobs.sqlite3")
         with Storage(restored) as storage:
             jobs = storage.load_jobs()

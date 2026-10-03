@@ -1,6 +1,7 @@
 import sqlite3
 from collections.abc import Iterator
 from contextlib import closing
+from dataclasses import replace
 from datetime import date
 from pathlib import Path
 
@@ -8,7 +9,7 @@ import pytest
 from assertpy import assert_that
 
 from src.schema import ApplicationStatus, Job
-from src.storage import Storage
+from src.storage import JobNotFoundError, Storage
 
 
 @pytest.fixture
@@ -164,3 +165,144 @@ class TestStorage:
             jobs = database.load_jobs()
 
         assert_that(jobs).is_equal_to([expected])
+
+    def test_notes_migration_preserves_platform_and_is_repeatable(
+        self, tmp_path: Path
+    ) -> None:
+        path = tmp_path / "pre-notes.sqlite3"
+        with closing(sqlite3.connect(path)) as connection:
+            with connection:
+                connection.execute(
+                    "CREATE TABLE jobs (id TEXT PRIMARY KEY, company TEXT, role TEXT, location TEXT, tags TEXT, status TEXT, applied_on TEXT, stage TEXT, outcome TEXT, platform TEXT NOT NULL DEFAULT '')"
+                )
+                connection.execute(
+                    "INSERT INTO jobs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        "old-id",
+                        "Example",
+                        "Developer",
+                        "Remote",
+                        "Python",
+                        "Active",
+                        "2026-09-12",
+                        "Interview",
+                        None,
+                        "https://example.com/job",
+                    ),
+                )
+        expected = Job(
+            "Example",
+            "Developer",
+            "Remote",
+            "Python",
+            ApplicationStatus.ACTIVE,
+            date(2026, 9, 12),
+            "Interview",
+            id="old-id",
+            platform="https://example.com/job",
+        )
+
+        with Storage(path) as database:
+            database.initialize_database()
+            database.initialize_database()
+            jobs = database.load_jobs()
+
+        assert_that(jobs).is_equal_to([expected])
+
+
+class TestUpdateJob:
+    def test_update_changes_only_that_job_and_keeps_order(
+        self, storage: Storage, saved_jobs: list[Job]
+    ) -> None:
+        updated = replace(
+            saved_jobs[1],
+            company="Renamed",
+            status=ApplicationStatus.CLOSED,
+            stage=None,
+            outcome="Rejected",
+            platform="https://example.com/job",
+            notes="Line one\nLine two",
+        )
+
+        storage.update_job(updated)
+        jobs = storage.load_jobs()
+
+        assert_that(jobs).is_equal_to(
+            [saved_jobs[0], updated, saved_jobs[2], saved_jobs[3]]
+        )
+
+    def test_update_can_clear_application_details(
+        self, storage: Storage, saved_jobs: list[Job]
+    ) -> None:
+        updated = replace(
+            saved_jobs[1],
+            status=ApplicationStatus.INTERESTED,
+            applied_on=None,
+            stage=None,
+        )
+
+        storage.update_job(updated)
+        jobs = storage.load_jobs()
+
+        assert_that(jobs[1]).is_equal_to(updated)
+
+    def test_update_survives_connection_reopening(
+        self, db_path: Path, storage: Storage, saved_jobs: list[Job]
+    ) -> None:
+        updated = replace(saved_jobs[0], notes="Follow up Monday")
+        storage.update_job(updated)
+
+        with Storage(db_path) as reopened:
+            jobs = reopened.load_jobs()
+
+        assert_that(jobs[0]).is_equal_to(updated)
+
+    def test_missing_id_raises_job_not_found(
+        self, storage: Storage, saved_jobs: list[Job]
+    ) -> None:
+        missing = Job("Ghost", "Developer", "", "", ApplicationStatus.INTERESTED)
+
+        update_missing = storage.update_job
+
+        assert_that(update_missing).raises(JobNotFoundError).when_called_with(missing)
+
+    def test_missing_id_does_not_insert(
+        self, storage: Storage, saved_jobs: list[Job]
+    ) -> None:
+        missing = Job("Ghost", "Developer", "", "", ApplicationStatus.INTERESTED)
+
+        try:
+            storage.update_job(missing)
+        except JobNotFoundError:
+            pass
+        jobs = storage.load_jobs()
+
+        assert_that(jobs).is_equal_to(saved_jobs)
+
+    def test_failed_update_leaves_data_unchanged(
+        self, storage: Storage, saved_jobs: list[Job]
+    ) -> None:
+        invalid = replace(saved_jobs[1], company=None, notes="Should not save")
+
+        try:
+            storage.update_job(invalid)
+        except sqlite3.IntegrityError:
+            pass
+        jobs = storage.load_jobs()
+
+        assert_that(jobs).is_equal_to(saved_jobs)
+
+    def test_failed_update_allows_subsequent_update(
+        self, storage: Storage, saved_jobs: list[Job]
+    ) -> None:
+        invalid = replace(saved_jobs[1], company=None)
+        valid = replace(saved_jobs[1], notes="Saved after retry")
+
+        try:
+            storage.update_job(invalid)
+        except sqlite3.IntegrityError:
+            pass
+        storage.update_job(valid)
+        jobs = storage.load_jobs()
+
+        assert_that(jobs[1]).is_equal_to(valid)

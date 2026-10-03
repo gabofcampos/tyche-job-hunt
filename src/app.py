@@ -2,8 +2,11 @@ import sqlite3
 
 import streamlit as st
 
+from src import messages
 from src.job_cards import render_job_card, render_no_jobs
+from src.job_details import render_job_details
 from src.job_form import open_job_form, show_job_form
+from src.presentation import STATUS_COLORS
 from src.schema import ApplicationStatus
 from src.storage import Storage
 
@@ -17,18 +20,11 @@ try:
     with Storage() as storage:
         storage.initialize_database()
         all_jobs = storage.load_jobs()
-except (sqlite3.Error, OSError):
-    st.error(
-        "Could not open or read the jobs database. "
-        "Check that the data folder is accessible and writable, "
-        "then reload the app."
-    )
+except sqlite3.Error, OSError:
+    st.error(messages.DATABASE_UNREADABLE)
     st.stop()
 except ValueError:
-    st.error(
-        "The jobs database contains an invalid date or status. "
-        "Check the stored data or restore a known-good backup."
-    )
+    st.error(messages.DATABASE_INVALID)
     st.stop()
 
 if "job_form_open" not in st.session_state:
@@ -61,10 +57,10 @@ with st.container(border=True):
         )
 
 if st.session_state.get("job_form_open", False):
-    show_job_form()
+    show_job_form(all_jobs)
 
-if "job_added_message" in st.session_state:
-    st.success(st.session_state.pop("job_added_message"))
+if "job_saved_message" in st.session_state:
+    st.success(st.session_state.pop("job_saved_message"))
 
 searched_for_jobs = [
     job
@@ -76,40 +72,56 @@ board_columns = [
     (
         ApplicationStatus.INTERESTED,
         "Jobs I want to consider (not yet applied).",
-        "yellow",
     ),
-    (ApplicationStatus.ACTIVE, "Applied and waiting on an answer.", "blue"),
-    (ApplicationStatus.CLOSED, "Rejection, withdrawn, or otherwise finished.", "red"),
+    (ApplicationStatus.ACTIVE, "Applied and waiting on an answer."),
+    (ApplicationStatus.CLOSED, "Rejection, withdrawn, or otherwise finished."),
 ]
 
-for column, (status, description, color) in zip(
-    st.columns(3, gap="medium"), board_columns
-):
-    jobs = [job for job in searched_for_jobs if job.status == status]
-    with column:
-        with st.container(border=True, height="stretch"):
-            with st.container(horizontal=True, vertical_alignment="center"):
-                st.header(status.value, anchor=False)
-                st.badge(str(len(jobs)), color=color)
-            st.caption(description)
+selected_job_id = st.session_state.get("selected_job_id")
+selected_job = next((job for job in all_jobs if job.id == selected_job_id), None)
+if selected_job_id is not None and selected_job is None:
+    st.session_state.selected_job_id = None
+    st.info(messages.SELECTED_JOB_UNAVAILABLE)
 
-            with st.container(height="stretch"):
-                for job in jobs:
-                    render_job_card(job)
-                if not jobs:
-                    has_jobs_before_search = any(
-                        job.status == status for job in all_jobs
-                    )
-                    render_no_jobs(
-                        status,
-                        search_has_no_matches=bool(query) and has_jobs_before_search,
-                    )
+if selected_job is not None:
+    board_area, details_area = st.columns([2, 1], gap="medium")
+else:
+    board_area = st.container()
 
-            st.button(
-                "Add a job",
-                icon=":material/add:",
-                width="stretch",
-                key=f"add_{status.name.lower()}",
-                on_click=open_job_form,
-                args=(status,),
-            )
+with board_area:
+    for column, (status, description) in zip(
+        st.columns(3, gap="medium"), board_columns
+    ):
+        jobs = [job for job in searched_for_jobs if job.status == status]
+        with column:
+            with st.container(border=True, height="stretch"):
+                with st.container(horizontal=True, vertical_alignment="center"):
+                    st.header(status.value, anchor=False)
+                    st.badge(str(len(jobs)), color=STATUS_COLORS[status])
+                st.caption(description)
+
+                with st.container(height="stretch"):
+                    for job in jobs:
+                        render_job_card(job)
+                    if not jobs:
+                        has_jobs_before_search = any(
+                            job.status == status for job in all_jobs
+                        )
+                        render_no_jobs(
+                            status,
+                            search_has_no_matches=bool(query)
+                            and has_jobs_before_search,
+                        )
+
+                st.button(
+                    "Add a job",
+                    icon=":material/add:",
+                    width="stretch",
+                    key=f"add_{status.name.lower()}",
+                    on_click=open_job_form,
+                    args=(status,),
+                )
+
+if selected_job is not None:
+    with details_area:
+        render_job_details(selected_job)

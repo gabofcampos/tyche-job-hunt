@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 
@@ -22,3 +23,20 @@ class Job:
     outcome: str | None = None
     id: str = field(default_factory=lambda: str(uuid4()))
     platform: str = ""
+    notes: str = ""
+
+
+def is_valid_posting_url(url: str) -> bool:
+    """Accept only HTTP(S) URLs with a host and no whitespace or control characters."""
+    try:
+        parsed = urlsplit(url)
+        # Accessing port also validates non-numeric and out-of-range ports.
+        parsed.port
+    except ValueError:
+        return False
+    return (
+        parsed.scheme in {"http", "https"}
+        and bool(parsed.hostname)
+        and not any(char.isspace() or ord(char) < 32 for char in url)
+        and "\\" not in url
+    )
