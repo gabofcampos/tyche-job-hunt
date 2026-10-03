@@ -37,19 +37,38 @@ uv run python -m streamlit run src/app.py
 
 ### how do I run the tests?
 The suite uses pytest and assertpy, installed with the development dependencies.
-Run it from the repository root:
+With `make` installed, run the Makefile target from the repository root:
 
 ```bash
-uv run python -m pytest -q
+make test
 ```
 
 Storage and dashboard tests use temporary databases, so
 they do not require database initialization or modify `data/jobs.sqlite3`.
 
-To run only the storage tests:
+The Makefile runs the complete suite. To run only the storage tests, invoke
+pytest directly:
 ```bash
 uv run python -m pytest tests/test_storage.py -q
 ```
+
+### how do I format and check the code?
+
+Sort imports with isort and format Python files with Black:
+
+```bash
+make format
+```
+
+To format the code and then run the complete test suite:
+
+```bash
+make check
+```
+
+Both `make format` and `make check` can modify files in `src/` and `tests/`.
+Installation, app startup, backups, and focused tests use the direct commands
+below or above because they do not currently have Makefile targets.
 
 
 ### how do I back up my jobs?
