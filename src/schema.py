@@ -33,7 +33,6 @@ class Job:
 
 @dataclass
 class Company:
-    id: str = field(default_factory=lambda: str(uuid4()))
     name: str
     industry: str
     location: str
@@ -43,8 +42,9 @@ class Company:
     website_url: str
     careers_url: str
     contacted: bool
-    contacted_on: date | None = None
     why_interested: str
+    contacted_on: date | None = None
+    id: str = field(default_factory=lambda: str(uuid4()))
     notes: str = ""
 
 
