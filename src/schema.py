@@ -11,6 +11,12 @@ class ApplicationStatus(Enum):
     CLOSED = "Closed"
 
 
+class CompanyInterestRate(Enum):
+    VERY_HIGH = "Very high"
+    HIGH = "High"
+    SOMEWHAT = "Somewhat"
+
+
 @dataclass
 class Job:
     company: str
@@ -32,7 +38,7 @@ class Company:
     industry: str
     location: str
     work_setup: str | None
-    interest: str
+    interest: CompanyInterestRate
     tags: str
     website_url: str
     careers_url: str
