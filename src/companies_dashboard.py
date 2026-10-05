@@ -236,7 +236,11 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
         st.caption(
             f"Showing {min(PAGE_SIZE, max(0, len(visible) - (page - 1) * PAGE_SIZE))} of {len(visible)} companies"
         )
-        with st.container(horizontal=True, vertical_alignment="center"):
+        with st.container(
+            horizontal=True,
+            horizontal_alignment="right",
+            vertical_alignment="center",
+        ):
             st.button(
                 "Previous",
                 icon=":material/chevron_left:",
@@ -245,7 +249,7 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
                 on_click=change_company_page,
                 args=(page - 1,),
             )
-            st.caption(f"Page {page} of {pages}")
+            st.caption(f"Page {page} of {pages}", width="content")
             st.button(
                 "Next",
                 icon=":material/chevron_right:",
