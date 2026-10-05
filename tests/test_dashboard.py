@@ -172,7 +172,11 @@ class TestDashboard:
             (
                 list(app.exception),
                 app.session_state.job_form_open,
-                [w.value for w in app.text_input if w.label != "Search jobs"],
+                [
+                    w.value
+                    for w in app.text_input
+                    if w.key and w.key.startswith("job_draft_")
+                ],
                 [w.value for w in app.selectbox],
                 app.date_input[0].value,
             )
@@ -330,7 +334,11 @@ class TestDashboard:
 
         assert_that(
             (
-                [w.value for w in app.text_input if w.label != "Search jobs"],
+                [
+                    w.value
+                    for w in app.text_input
+                    if w.key and w.key.startswith("job_draft_")
+                ],
                 [w.value for w in app.selectbox],
                 app.date_input[0].value,
             )
