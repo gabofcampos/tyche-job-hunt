@@ -569,7 +569,7 @@ class TestDashboard:
                 app.session_state.selected_job_id,
                 list(app.exception),
             )
-        ).is_equal_to((2, original_columns, None, []))
+        ).is_equal_to((4, original_columns, None, []))
 
     @pytest.mark.parametrize(
         "url",
@@ -1190,3 +1190,62 @@ class TestSaveEdits:
                 [w.key for w in app.text_input if w.key == "job_draft_company"],
             )
         ).is_equal_to(([ACTIVE_JOB], ACTIVE_JOB.id, []))
+
+    def test_delete_removes_selected_id_and_refreshes_board(
+        self, app: AppTest, db_path: Path
+    ) -> None:
+        first = Job("Same company", "Same role", "", "", ApplicationStatus.ACTIVE)
+        second = replace(first, id="another-id")
+        with Storage(db_path) as database:
+            database.insert_job(first)
+            database.insert_job(second)
+        app.run()
+        app.button(key=f"job_{first.id}").click().run()
+
+        app.button(key="delete_job").click().run()
+        with Storage(db_path) as database:
+            jobs = database.load_jobs()
+
+        assert_that(
+            (
+                jobs,
+                app.session_state.selected_job_id,
+                [s.value for s in app.success],
+                [m.value for m in app.markdown if "-badge[" in m.value],
+                list(app.exception),
+            )
+        ).is_equal_to(
+            (
+                [second],
+                None,
+                [messages.JOB_DELETED],
+                [":yellow-badge[0]", ":blue-badge[1]", ":red-badge[0]"],
+                [],
+            )
+        )
+
+    def test_failed_delete_preserves_job_and_selection(
+        self, app: AppTest, db_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        job = Job("Example", "Developer", "", "", ApplicationStatus.ACTIVE)
+        with Storage(db_path) as database:
+            database.insert_job(job)
+        app.run()
+        app.button(key=f"job_{job.id}").click().run()
+        monkeypatch.setattr(
+            Storage, "delete_job", Mock(side_effect=sqlite3.OperationalError("Locked"))
+        )
+
+        app.button(key="delete_job").click().run()
+        with Storage(db_path) as database:
+            jobs = database.load_jobs()
+
+        assert_that(
+            (
+                jobs,
+                app.session_state.selected_job_id,
+                [e.value for e in app.error],
+                list(app.success),
+                list(app.exception),
+            )
+        ).is_equal_to(([job], job.id, [messages.DELETE_FAILED], [], []))

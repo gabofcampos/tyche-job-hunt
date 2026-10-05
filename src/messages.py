@@ -16,6 +16,9 @@ SELECTED_JOB_UNAVAILABLE = (
 )
 EDIT_JOB_UNAVAILABLE = "This job is no longer available to edit."
 REQUIRED_FIELDS = "Enter both a company and a role."
+JOB_DELETED = "Job deleted."
+DELETE_JOB_UNAVAILABLE = "This job is no longer available to delete."
+DELETE_FAILED = "Could not delete this job. Check database access and try again."
 INVALID_POSTING_URL = (
     "Enter a posting URL that starts with http:// or https:// "
     "and includes a valid host, or leave it empty."

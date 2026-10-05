@@ -306,3 +306,23 @@ class TestUpdateJob:
         jobs = storage.load_jobs()
 
         assert_that(jobs[1]).is_equal_to(valid)
+
+    def test_deletion_persists_after_reopening(
+        self, db_path: Path, saved_jobs: list[Job], storage: Storage
+    ) -> None:
+        target = saved_jobs[1]
+
+        storage.delete_job(target.id)
+        with Storage(db_path) as reopened:
+            jobs = reopened.load_jobs()
+
+        assert_that(jobs).is_equal_to(
+            [job for job in saved_jobs if job.id != target.id]
+        )
+
+    def test_delete_missing_id_raises(self, storage: Storage) -> None:
+        from src.storage import JobNotFoundError
+
+        delete = storage.delete_job
+
+        assert_that(delete).raises(JobNotFoundError).when_called_with("missing-id")

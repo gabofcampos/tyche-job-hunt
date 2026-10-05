@@ -1,7 +1,7 @@
 import streamlit as st
 
 from src import messages
-from src.job_form import open_edit_form
+from src.job_form import delete_job, open_edit_form
 from src.presentation import STATUS_COLORS, application_details
 from src.schema import Job, is_valid_posting_url
 
@@ -52,11 +52,23 @@ def render_job_details(job: Job) -> None:
         else:
             st.caption("No notes provided.")
 
-        st.button(
-            "Edit job",
-            icon=":material/edit:",
-            key="edit_job",
-            width="stretch",
-            on_click=open_edit_form,
-            args=(job.id,),
-        )
+        edit_col, del_col = st.columns([0.6, 0.4])
+        with edit_col:
+            st.button(
+                "Edit job",
+                icon=":material/edit:",
+                key="edit_job",
+                width="stretch",
+                on_click=open_edit_form,
+                args=(job.id,),
+            )
+
+        with del_col:
+            st.button(
+                "Delete job",
+                icon=":material/delete:",
+                key="delete_job",
+                width="stretch",
+                on_click=delete_job,
+                args=(job.id,),
+            )
