@@ -25,6 +25,22 @@ class Job:
     platform: str = ""
     notes: str = ""
 
+@dataclass
+class Company:
+    id: str = field(default_factory=lambda: str(uuid4()))
+    name: str
+    industry: str
+    location: str
+    work_setup: str | None
+    interest: str
+    tags: str
+    website_url: str
+    careers_url: str
+    contacted: bool
+    contacted_on: date | None = None
+    why_interested: str
+    notes: str = ""
+
 
 def is_valid_posting_url(url: str) -> bool:
     """Accept only HTTP(S) URLs with a host and no whitespace or control characters."""

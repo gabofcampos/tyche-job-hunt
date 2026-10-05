@@ -3,6 +3,7 @@ import sqlite3
 import streamlit as st
 
 from src import messages
+from src.companies_dashboard import render_companies_dashboard
 from src.jobs_dashboard import render_jobs_dashboard
 from src.storage import Storage
 
@@ -25,15 +26,6 @@ except ValueError:
 
 if "job_form_open" not in st.session_state:
     st.session_state.job_form_open = False
-
-
-def render_companies_dashboard() -> None:
-    st.text_input(
-        "Search companies",
-        placeholder="Company name, tags or notes...",
-        key="companies_search",
-    )
-
 
 jobs_tab, companies_tab = st.tabs(["Jobs", "Companies"])
 
