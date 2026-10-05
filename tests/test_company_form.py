@@ -125,3 +125,115 @@ class TestCompanyStorage:
             companies = database.load_companies()
 
         assert_that(companies).is_equal_to([company])
+
+
+@pytest.fixture
+def selected_company(app, db_path):
+    app.text_input(key="company_draft_name").set_value("Original")
+    app.selectbox(key="company_draft_work_setup").select(WorkSetup.HYBRID)
+    app.text_area(key="company_draft_notes").set_value("Keep these notes")
+    app.button(key="submit_company_form").click().run()
+    with Storage(db_path) as database:
+        company = database.load_companies()[0]
+    app.button(key=f"company_{company.id}").click().run()
+    return company
+
+
+class TestEditDeleteCompany:
+    def test_edit_preserves_id_and_other_fields(self, app, db_path, selected_company):
+        from dataclasses import replace
+
+        app.button(key="edit_company").click().run()
+        app.text_input(key="company_draft_name").set_value("Renamed")
+
+        app.button(key="submit_company_form").click().run()
+        with Storage(db_path) as database:
+            companies = database.load_companies()
+
+        assert_that((list(app.exception), companies)).is_equal_to(
+            ([], [replace(selected_company, name="Renamed")])
+        )
+
+    def test_cancel_edit_preserves_saved_company(self, app, db_path, selected_company):
+        app.button(key="edit_company").click().run()
+        app.text_input(key="company_draft_name").set_value("Discard")
+
+        app.button(key="cancel_company_form").click().run()
+        with Storage(db_path) as database:
+            companies = database.load_companies()
+
+        assert_that(companies).is_equal_to([selected_company])
+
+    def test_delete_persists_and_closes_details(self, app, db_path, selected_company):
+        app.button(key="delete_company").click().run()
+
+        with Storage(db_path) as database:
+            companies = database.load_companies()
+
+        assert_that(
+            (
+                companies,
+                app.session_state.selected_company_id,
+                [h.value for h in app.subheader],
+                list(app.exception),
+            )
+        ).is_equal_to(([], None, ["All companies"], []))
+
+    def test_delete_failure_keeps_company_selected(
+        self, app, db_path, selected_company
+    ):
+        with patch.object(
+            Storage, "delete_company", side_effect=sqlite3.OperationalError("locked")
+        ):
+            app.button(key="delete_company").click().run()
+
+        with Storage(db_path) as database:
+            companies = database.load_companies()
+
+        assert_that(
+            (companies, app.session_state.selected_company_id, len(app.error))
+        ).is_equal_to(([selected_company], selected_company.id, 1))
+
+    def test_edit_failure_preserves_draft_for_retry(
+        self, app, db_path, selected_company
+    ):
+        app.button(key="edit_company").click().run()
+        app.text_input(key="company_draft_name").set_value("Retry")
+        with patch.object(
+            Storage, "update_company", side_effect=sqlite3.OperationalError("locked")
+        ):
+            app.button(key="submit_company_form").click().run()
+        retained = app.text_input(key="company_draft_name").value
+
+        app.button(key="submit_company_form").click().run()
+        with Storage(db_path) as database:
+            companies = database.load_companies()
+
+        assert_that((retained, [(c.id, c.name) for c in companies])).is_equal_to(
+            ("Retry", [(selected_company.id, "Retry")])
+        )
+
+    def test_edit_missing_company_does_not_recreate_it(
+        self, app, db_path, selected_company
+    ):
+        app.button(key="edit_company").click().run()
+        with Storage(db_path) as database:
+            database.delete_company(selected_company.id)
+
+        app.button(key="submit_company_form").click().run()
+        with Storage(db_path) as database:
+            companies = database.load_companies()
+
+        assert_that(
+            (companies, len(app.error), app.session_state.company_form_open)
+        ).is_equal_to(([], 1, True))
+
+    def test_delete_missing_id_raises(self, db_path):
+        from src.storage import CompanyNotFoundError
+
+        with Storage(db_path) as database:
+            database.initialize_database()
+
+            delete = database.delete_company
+
+            assert_that(delete).raises(CompanyNotFoundError).when_called_with("missing")

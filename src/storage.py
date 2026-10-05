@@ -14,6 +14,10 @@ class JobNotFoundError(LookupError):
     """Raised when an update or deletion targets an ID that is not stored."""
 
 
+class CompanyNotFoundError(LookupError):
+    """Raised when a company update or deletion targets a missing ID."""
+
+
 class Storage:
     """
     Own one SQLite connection;
@@ -102,6 +106,31 @@ class Storage:
                 """,
                 company_to_params(company),
             )
+
+    def update_company(self, company: Company) -> None:
+        with self._connection:
+            cursor = self._connection.execute(
+                """
+                UPDATE companies SET
+                    name=:name, industry=:industry, location=:location,
+                    work_setup=:work_setup, interest=:interest, tags=:tags,
+                    website_url=:website_url, careers_url=:careers_url,
+                    contacted=:contacted, why_interested=:why_interested,
+                    contacted_on=:contacted_on, notes=:notes
+                WHERE id=:id
+                """,
+                company_to_params(company),
+            )
+            if cursor.rowcount == 0:
+                raise CompanyNotFoundError(company.id)
+
+    def delete_company(self, company_id: str) -> None:
+        with self._connection:
+            cursor = self._connection.execute(
+                "DELETE FROM companies WHERE id = ?", (company_id,)
+            )
+            if cursor.rowcount == 0:
+                raise CompanyNotFoundError(company_id)
 
     def load_companies(self) -> list[Company]:
         with self._connection:

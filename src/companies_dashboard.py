@@ -1,7 +1,12 @@
 import streamlit as st
 
 from src.company_filters import filter_companies
-from src.company_form import open_company_form, show_company_form
+from src.company_form import (
+    delete_company,
+    open_company_form,
+    open_edit_company_form,
+    show_company_form,
+)
 from src.schema import Company, is_valid_http_url
 
 COLUMN_WIDTHS = [2, 1.4, 1.4, 1.3, 1.3, 1.6, 0.6]
@@ -75,13 +80,24 @@ def render_company_details(company: Company) -> None:
             icon=":material/edit:",
             type="primary",
             key="edit_company",
-            disabled=True,
+            on_click=open_edit_company_form,
+            args=(company,),
+            width="stretch",
+        )
+        st.button(
+            "Delete company",
+            icon=":material/delete:",
+            key="delete_company",
+            on_click=delete_company,
+            args=(company.id,),
             width="stretch",
         )
 
 
 def render_companies_dashboard(companies: list[Company] | None = None) -> None:
     companies = companies or []
+    if error := st.session_state.pop("company_delete_error", None):
+        st.error(error)
     if message := st.session_state.pop("company_saved_message", None):
         st.success(message)
     if st.session_state.get("company_form_open", False):
