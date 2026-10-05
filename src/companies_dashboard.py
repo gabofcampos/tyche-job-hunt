@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.company_filters import filter_companies
+from src.company_form import open_company_form, show_company_form
 from src.schema import Company, is_valid_posting_url
 
 COLUMN_WIDTHS = [2, 1.4, 1.4, 1.3, 1.3, 1.6, 0.6]
@@ -71,9 +72,13 @@ def render_company_details(company: Company | None) -> None:
             width="stretch",
         )
 
-
 def render_companies_dashboard(companies: list[Company] | None = None) -> None:
     companies = companies or []
+    if message := st.session_state.pop("company_saved_message", None):
+        st.success(message)
+    if st.session_state.get("company_form_open", False):
+        show_company_form()
+
     heading, add = st.columns([4, 1], vertical_alignment="center")
     with heading:
         st.header("Companies")
@@ -85,6 +90,7 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
         key="add_company",
         width="stretch",
         help="Add a company you might be interested in working for.",
+        on_click=open_company_form,
     )
 
     table, details = st.columns([5, 2], gap="medium")

@@ -28,12 +28,14 @@ def open_job_form(status: ApplicationStatus = ApplicationStatus.INTERESTED) -> N
     st.session_state.job_form_status = status
     st.session_state.job_form_job_id = None
     st.session_state.job_form_needs_draft = True
+    st.session_state.company_form_open = False
     st.session_state.job_form_open = True
 
 
 def open_edit_form(job_id: str) -> None:
     st.session_state.job_form_job_id = job_id
     st.session_state.job_form_needs_draft = True
+    st.session_state.company_form_open = False
     st.session_state.job_form_open = True
 
 
