@@ -22,7 +22,7 @@ def clear_company_filters() -> None:
     st.session_state.companies_page = 1
 
 
-def render_company_details(company: Company | None) -> None:
+def render_company_details(company: Company) -> None:
     with st.container(border=True, height=650):
         title, close = st.columns([5, 1])
         title.subheader("Company details")
@@ -30,13 +30,9 @@ def render_company_details(company: Company | None) -> None:
             "Close",
             icon=":material/close:",
             key="close_company_details",
-            disabled=company is None,
         ):
             st.session_state.selected_company_id = None
             st.rerun()
-        if company is None:
-            st.info("Select a company to see its details.")
-            return
         st.subheader(company.name)
         st.badge(f"{company.interest.value} interest", color="green")
         st.caption(
@@ -72,6 +68,7 @@ def render_company_details(company: Company | None) -> None:
             width="stretch",
         )
 
+
 def render_companies_dashboard(companies: list[Company] | None = None) -> None:
     companies = companies or []
     if message := st.session_state.pop("company_saved_message", None):
@@ -93,7 +90,18 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
         on_click=open_company_form,
     )
 
-    table, details = st.columns([5, 2], gap="medium")
+    selected = next(
+        (
+            company
+            for company in companies
+            if company.id == st.session_state.get("selected_company_id")
+        ),
+        None,
+    )
+    if selected is None:
+        table = st.container()
+    else:
+        table, details = st.columns([5, 2], gap="medium")
     with table, st.container(border=True, height=650):
         with st.container(horizontal=True, vertical_alignment="center"):
             st.subheader("All companies")
@@ -190,16 +198,9 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
         st.selectbox(
             "Page", range(1, pages + 1), key="companies_page", disabled=pages == 1
         )
-    selected = next(
-        (
-            company
-            for company in companies
-            if company.id == st.session_state.get("selected_company_id")
-        ),
-        None,
-    )
-    with details:
-        render_company_details(selected)
+    if selected is not None:
+        with details:
+            render_company_details(selected)
     st.caption(
         "Select a company name to inspect it. Each column filter narrows the table."
     )

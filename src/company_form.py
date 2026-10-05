@@ -92,7 +92,6 @@ def show_company_form() -> None:
             "Could not save this company. Your entries are still in the form. Check database access, then click Submit again."
         )
     else:
-        st.session_state.selected_company_id = company.id
         st.session_state.company_saved_message = f"Company added: {company.name}."
         close_company_form()
         st.rerun()
