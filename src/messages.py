@@ -3,12 +3,12 @@
 from src.schema import ApplicationStatus
 
 DATABASE_UNREADABLE = (
-    "Could not open or read the jobs database. "
+    "Could not open or read the database. "
     "Check that the data folder is accessible and writable, "
     "then reload the app."
 )
 DATABASE_INVALID = (
-    "The jobs database contains an invalid date or status. "
+    "The database contains an invalid date, status, or company interest. "
     "Check the stored data or restore a known-good backup."
 )
 SELECTED_JOB_UNAVAILABLE = (

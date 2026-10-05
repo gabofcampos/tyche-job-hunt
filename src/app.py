@@ -17,6 +17,7 @@ try:
     with Storage() as storage:
         storage.initialize_database()
         all_jobs = storage.load_jobs()
+        all_companies = storage.load_companies()
 except sqlite3.Error, OSError:
     st.error(messages.DATABASE_UNREADABLE)
     st.stop()
@@ -33,4 +34,4 @@ with jobs_tab:
     render_jobs_dashboard(all_jobs)
 
 with companies_tab:
-    render_companies_dashboard()
+    render_companies_dashboard(all_companies)

@@ -5,7 +5,7 @@ import streamlit as st
 from src import messages
 from src.job_form import delete_job, open_edit_form
 from src.presentation import STATUS_COLORS, application_details
-from src.schema import Job, is_valid_posting_url
+from src.schema import Job, is_valid_http_url
 
 
 def close_job_details() -> None:
@@ -42,7 +42,7 @@ def render_job_details(job: Job) -> None:
         posting_url = job.platform.strip()
         if not posting_url:
             st.caption("No posting link.")
-        elif is_valid_posting_url(posting_url):
+        elif is_valid_http_url(posting_url):
             st.link_button("Open original posting", posting_url)
         else:
             st.text(job.platform)

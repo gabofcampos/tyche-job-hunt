@@ -16,6 +16,11 @@ class CompanyInterestRate(Enum):
     HIGH = "High"
     SOMEWHAT = "Somewhat"
 
+class WorkSetup(Enum):
+    REMOTE = "Remote"
+    HYBRID = "Hybrid"
+    ONSITE = "On-site"
+
 
 @dataclass
 class Job:
@@ -36,7 +41,7 @@ class Company:
     name: str
     industry: str
     location: str
-    work_setup: str | None
+    work_setup: WorkSetup
     interest: CompanyInterestRate
     tags: str
     website_url: str
@@ -48,7 +53,7 @@ class Company:
     notes: str = ""
 
 
-def is_valid_posting_url(url: str) -> bool:
+def is_valid_http_url(url: str) -> bool:
     """Accept only HTTP(S) URLs with a host and no whitespace or control characters."""
     try:
         parsed = urlsplit(url)
