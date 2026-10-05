@@ -11,6 +11,18 @@ class ApplicationStatus(Enum):
     CLOSED = "Closed"
 
 
+class CompanyInterestRate(Enum):
+    VERY_HIGH = "Very high"
+    HIGH = "High"
+    SOMEWHAT = "Somewhat"
+
+
+class WorkSetup(Enum):
+    REMOTE = "Remote"
+    HYBRID = "Hybrid"
+    ONSITE = "On-site"
+
+
 @dataclass
 class Job:
     company: str
@@ -26,7 +38,24 @@ class Job:
     notes: str = ""
 
 
-def is_valid_posting_url(url: str) -> bool:
+@dataclass
+class Company:
+    name: str
+    industry: str
+    location: str
+    work_setup: WorkSetup | None
+    interest: CompanyInterestRate
+    tags: str
+    website_url: str
+    careers_url: str
+    contacted: bool
+    why_interested: str
+    contacted_on: date | None = None
+    id: str = field(default_factory=lambda: str(uuid4()))
+    notes: str = ""
+
+
+def is_valid_http_url(url: str) -> bool:
     """Accept only HTTP(S) URLs with a host and no whitespace or control characters."""
     try:
         parsed = urlsplit(url)
