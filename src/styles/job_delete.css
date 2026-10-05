@@ -1,0 +1,14 @@
+.st-key-delete_job_form button {
+    background-color: #e40f0f;
+    border-color: #e40f0f;
+    color: white;
+}
+.st-key-delete_job_form button:hover {
+    background-color: #BD0B0B;
+    border-color: #BD0B0B;
+    color: white;
+}
+.st-key-delete_job_form button:focus-visible {
+    outline: 2px solid #e40f0f;
+    outline-offset: 3px;
+}
