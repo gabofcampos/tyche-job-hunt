@@ -16,6 +16,11 @@ class CompanyInterestRate(Enum):
     HIGH = "High"
     SOMEWHAT = "Somewhat"
 
+class WorkSetup(Enum):
+    REMOTE = "Remote"
+    HYBRID = "Hybrid"
+    ONSITE = "On-site"
+
 
 @dataclass
 class Job:
@@ -36,7 +41,7 @@ class Company:
     name: str
     industry: str
     location: str
-    work_setup: str | None
+    work_setup: WorkSetup
     interest: CompanyInterestRate
     tags: str
     website_url: str

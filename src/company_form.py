@@ -2,7 +2,7 @@ import sqlite3
 
 import streamlit as st
 
-from src.schema import Company, CompanyInterestRate, is_valid_http_url
+from src.schema import Company, CompanyInterestRate, WorkSetup, is_valid_http_url
 from src.storage import Storage
 
 
@@ -26,8 +26,8 @@ def show_company_form() -> None:
         location = st.text_input("Location (optional)", key="company_draft_location")
         work_setup = st.selectbox(
             "Work setup (optional)",
-            ["Remote", "Hybrid", "On-site"],
-            index=None,
+            list(WorkSetup),
+            format_func=lambda status: status.value,
             key="company_draft_work_setup",
         )
         interest = st.selectbox(
