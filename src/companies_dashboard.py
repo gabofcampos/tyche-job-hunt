@@ -13,6 +13,10 @@ COLUMN_WIDTHS = [2, 1.4, 1.4, 1.3, 1.3, 1.6, 0.6]
 PAGE_SIZE = 6
 
 
+def change_company_page(page: int) -> None:
+    st.session_state.companies_page = page
+
+
 def clear_company_filters() -> None:
     for key in (
         "search",
@@ -232,9 +236,24 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
         st.caption(
             f"Showing {min(PAGE_SIZE, max(0, len(visible) - (page - 1) * PAGE_SIZE))} of {len(visible)} companies"
         )
-        st.selectbox(
-            "Page", range(1, pages + 1), key="companies_page", disabled=pages == 1
-        )
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.button(
+                "Previous",
+                icon=":material/chevron_left:",
+                key="companies_previous_page",
+                disabled=page == 1,
+                on_click=change_company_page,
+                args=(page - 1,),
+            )
+            st.caption(f"Page {page} of {pages}")
+            st.button(
+                "Next",
+                icon=":material/chevron_right:",
+                key="companies_next_page",
+                disabled=page == pages,
+                on_click=change_company_page,
+                args=(page + 1,),
+            )
     if selected is not None:
         with details:
             render_company_details(selected)
