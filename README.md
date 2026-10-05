@@ -1,27 +1,29 @@
 # tyche-job-hunt
 
-the purpose of this repo is to create a simple job tracker.
+A simple local tracker for job applications and companies you would like to work for.
 
 rules:
+
 - it will be born and developed out of necessity
 - it will iterate in the smallest simplest way posible
 - it will be practical
 
 ## just cloned the repo...
 ### how do I install the dependencies?
-install the repo dependencies by running
+
+Use Python 3.14 or newer and `uv`. Install the dependencies from the repository root:
 ```bash
 uv sync
 ```
 
 ### how do I initialize the database?
 
-The app automatically creates `data/jobs.sqlite3` and its `jobs` table on
+The app automatically creates `data/jobs.sqlite3` and its `jobs` and `companies` tables on
 startup if they do not exist. No separate initialization command is needed.
 Existing records are preserved.
 
-Jobs and their selected statuses are saved to SQLite and loaded on each full
-app rerun. Closing and reopening Streamlit preserves saved jobs as long as the
+Jobs, their selected statuses, and companies are saved to SQLite and loaded on
+each full app rerun. Closing and reopening Streamlit preserves saved data as long as the
 database file remains in place. Search, popup state, and unsaved drafts are
 temporary. Jobs from older in-memory sessions are not automatically imported.
 
@@ -71,7 +73,7 @@ Installation, app startup, backups, and focused tests use the direct commands
 below or above because they do not currently have Makefile targets.
 
 
-### how do I back up my jobs?
+### how do I back up my jobs and companies?
 
 From the repository root:
 
@@ -81,7 +83,8 @@ uv run python -m src.backup
 
 This uses SQLite's `Connection.backup()` to create a snapshot named
 `backups/jobs-<UTC timestamp>.sqlite3`. Both connections are closed after copying.
-The source is `data/jobs.sqlite3`; it must already exist. Existing destination
+The snapshot includes both jobs and companies. The source is
+`data/jobs.sqlite3`; it must already exist. Existing destination
 files are never overwritten. If copying fails, the command reports an error
 and removes its incomplete destination.
 
@@ -116,8 +119,10 @@ from src.storage import DEFAULT_DB_PATH, Storage
 snapshot = Path("backups/jobs-REPLACE-WITH-TIMESTAMP.sqlite3")
 copy_database(snapshot, DEFAULT_DB_PATH)
 with Storage() as storage:
+    storage.initialize_database()
     jobs = storage.load_jobs()
-print(f"Restored {len(jobs)} jobs")
+    companies = storage.load_companies()
+print(f"Restored {len(jobs)} jobs and {len(companies)} companies")
 PYTHON
 ```
 
@@ -127,7 +132,10 @@ original directory back into place. Do not initialize an empty replacement as
 recovery. Keep the original until you have checked the restored board.
 
 4. Restart with `uv run python -m streamlit run src/app.py` and check the cards,
-   status counts, and application details.
+   status counts, application details, and the Companies tab.
+
+Older snapshots made before company tracking contain no companies; initialization
+creates an empty companies table while preserving restored jobs.
 
 Backup tests restore into temporary paths and compare all Job fields and IDs.
 They never overwrite the normal database. Run them with:
@@ -169,25 +177,57 @@ drawer in `designs/job_tracker_detail_drawer.excalidraw`: it resizes the board
 instead of covering it. Cards still show company above role and include the
 posting URL as text, unlike the drawing's role-first cards.
 
+### how do I manage companies?
+
+The **Companies** tab tracks places you would like to work, independently of job
+applications.
+
+- **Add:** click **Add company**. The name is required. You can also record
+  industry, location, work setup (Remote, Hybrid, or On-site), interest, tags,
+  website and careers URLs, why you saved it, contact details, and notes.
+  URLs must use HTTP or HTTPS. The contact date is saved only when **Contacted**
+  is checked.
+- **Find:** search company names, tags, or notes; narrow results with the column
+  filters; and sort names A–Z or Z–A. **Clear filters** resets the search and
+  column filters. The right-aligned **Previous** and **Next** controls show
+  **Page X of Y**, with six companies per page.
+- **Details:** click a company name to open its panel. Until you select one,
+  the table uses the full width. Closing the panel restores that layout.
+  Filtering does not close an already selected company's details.
+- **Edit:** click **Edit company** in the details panel. The form starts with
+  saved values; **Submit** updates the same record. **Cancel**, X, or Escape
+  discards the draft. A failed save leaves your entries available for retry.
+- **Delete:** click **Delete company** in the details panel to remove the saved
+  company immediately and close the panel. There is no confirmation or undo.
+
+Companies are not yet linked to job applications: the Jobs column shows **—**,
+linked jobs are unavailable, and editing or deleting a company does not change
+any job records.
+
+Jobs can also be deleted immediately using **Delete job** in their details panel.
+
 ### what does persistence cover?
 
 Saved jobs retain their IDs, company, role, location, tags, selected status,
 relevant application details, posting URL, and optional multiline notes,
 including after edits. Existing databases automatically gain the notes column
 without replacing saved jobs. The board derives columns and counts from those
-records. Search text, the open details panel, form visibility, and unsaved
+records. Companies retain all their form fields and IDs, including after edits.
+Search text, the open details panel, form visibility, and unsaved
 drafts are temporary and are not restored after a restart.
 
 App sessions on this machine share `data/jobs.sqlite3`. A full rerun reads the
-latest committed jobs, but there is no live synchronization between browser
+latest committed jobs and companies, but there is no live synchronization between browser
 sessions and no authentication. Jobs can be edited from the detail panel,
 including status changes; edits keep the job's ID and board position, and the last
-successful save wins. Deletion is not implemented.
+successful save wins. Job and company deletions also persist across restarts.
 
 The database and default backup paths are relative to the project location,
 not the shell working directory. Keeping the database file is necessary for
 persistence; deployment to an ephemeral filesystem needs separate durable
-storage. Creating the table at startup does not migrate an existing schema.
+storage. Startup applies the supported additive changes (the posting URL and
+notes columns on older job tables, and the companies table) without replacing
+existing records. It is not a general migration system.
 
 ### what has been verified?
 
@@ -199,6 +239,7 @@ Run focused checks with:
 
 ```bash
 uv run python -m pytest tests/test_dashboard.py -q
+uv run python -m pytest tests/test_company_form.py tests/test_companies_dashboard.py -q
 uv run python -m pytest tests/test_restart.py -q
 uv run python -m pytest tests/test_backup.py -q
 ```
@@ -225,3 +266,9 @@ opening it; saving, refreshing the panel, and showing a success message; the inv
 error keeping the draft; and at 390 px, the panel stacking below the columns
 with no horizontal overflow. A human visual pass in a regular browser window
 is still pending.
+
+The first Companies version has automated coverage for creation, validation,
+search and filters, selection under filtering, editing, cancellation, deletion,
+failed-save retry, missing records, and persistence after reopening the database.
+Work setup round trips cover each enum value and an unspecified value. Pagination
+navigation, page boundaries, and filtering were also checked with Streamlit AppTest.
