@@ -33,9 +33,11 @@ def app(db_path: Path) -> AppTest:
 
 def fill_text_fields(app: AppTest, values: dict[str, str]) -> None:
     for label, value in values.items():
-        next(widget for widget in app.text_input if widget.label == label).set_value(
-            value
-        )
+        next(
+            widget
+            for widget in app.text_input
+            if widget.label == label and widget.key.startswith("job_draft_")
+        ).set_value(value)
 
 
 def fill_application_details(app: AppTest, applied_on: date, stage: str) -> None:
@@ -78,7 +80,7 @@ class TestDashboard:
         self, app: AppTest, db_path: Path, status: ApplicationStatus
     ) -> None:
         app.button(key=f"add_{status.name.lower()}").click().run()
-        default_status = app.selectbox[0].value
+        default_status = app.selectbox(key="job_draft_status").value
 
         submit(app, "Example", "Developer")
         with Storage(db_path) as database:
@@ -89,7 +91,7 @@ class TestDashboard:
                 list(app.exception),
                 default_status,
                 [(j.company, j.role, j.status) for j in jobs],
-                [h.value for h in app.subheader],
+                [h.value for h in app.tabs[0].subheader],
                 [m.value for m in app.markdown if "-badge[" in m.value],
             )
         ).is_equal_to(
@@ -114,7 +116,7 @@ class TestDashboard:
         ).run()
 
         assert_that(
-            (list(fresh.exception), [h.value for h in fresh.subheader])
+            (list(fresh.exception), [h.value for h in fresh.tabs[0].subheader])
         ).is_equal_to(([], ["Example"]))
 
     def test_search_and_clear_preserve_saved_job(
@@ -124,7 +126,7 @@ class TestDashboard:
         submit(app, "Example", "Developer")
 
         app.text_input[0].set_value("no-match").run()
-        hidden_cards = [h.value for h in app.subheader]
+        hidden_cards = [h.value for h in app.tabs[0].subheader]
         app.text_input[0].set_value("").run()
         with Storage(db_path) as database:
             jobs = database.load_jobs()
@@ -132,7 +134,7 @@ class TestDashboard:
         assert_that(
             (
                 hidden_cards,
-                [h.value for h in app.subheader],
+                [h.value for h in app.tabs[0].subheader],
                 len(jobs),
                 list(app.exception),
             )
@@ -177,7 +179,7 @@ class TestDashboard:
                     for w in app.text_input
                     if w.key and w.key.startswith("job_draft_")
                 ],
-                [w.value for w in app.selectbox],
+                [w.value for w in app.selectbox if w.key.startswith("job_draft_")],
                 app.date_input[0].value,
             )
         ).is_equal_to(
@@ -306,7 +308,7 @@ class TestDashboard:
 
         app.text_input[0].set_value(query).run()
 
-        assert_that([h.value for h in app.subheader]).is_equal_to(["Example"])
+        assert_that([h.value for h in app.tabs[0].subheader]).is_equal_to(["Example"])
 
     @pytest.mark.parametrize(
         "company,role",
@@ -339,7 +341,7 @@ class TestDashboard:
                     for w in app.text_input
                     if w.key and w.key.startswith("job_draft_")
                 ],
-                [w.value for w in app.selectbox],
+                [w.value for w in app.selectbox if w.key.startswith("job_draft_")],
                 app.date_input[0].value,
             )
         ).is_equal_to(
@@ -401,7 +403,7 @@ class TestDashboard:
         assert_that(
             (
                 app.session_state.selected_job_id,
-                [h.value for h in app.subheader],
+                [h.value for h in app.tabs[0].subheader],
                 [t.value for t in app.text],
                 list(app.exception),
             )
@@ -445,7 +447,7 @@ class TestDashboard:
         assert_that(
             (
                 app.session_state.selected_job_id,
-                [i.value for i in app.info],
+                [i.value for i in app.tabs[0].info],
                 list(app.exception),
             )
         ).is_equal_to(
@@ -870,7 +872,7 @@ class TestEditForm:
         assert_that(
             (
                 app.session_state.job_form_open,
-                messages.EDIT_JOB_UNAVAILABLE in [i.value for i in app.info],
+                messages.EDIT_JOB_UNAVAILABLE in [i.value for i in app.tabs[0].info],
                 list(app.exception),
             )
         ).is_equal_to((False, True, []))
@@ -1139,7 +1141,7 @@ class TestSaveEdits:
             (
                 app.text_input[0].value,
                 [m.value for m in app.markdown if "-badge[" in m.value][:3],
-                [h.value for h in app.subheader],
+                [h.value for h in app.tabs[0].subheader],
                 list(app.exception),
             )
         ).is_equal_to(
