@@ -2,7 +2,7 @@ import sqlite3
 
 import streamlit as st
 
-from src.schema import Company, CompanyInterestRate, is_valid_posting_url
+from src.schema import Company, CompanyInterestRate, is_valid_http_url
 from src.storage import Storage
 
 
@@ -63,7 +63,7 @@ def show_company_form() -> None:
         st.error("Enter a company name.")
         return
     if any(
-        url.strip() and not is_valid_posting_url(url.strip())
+        url.strip() and not is_valid_http_url(url.strip())
         for url in (website, careers)
     ):
         st.error(

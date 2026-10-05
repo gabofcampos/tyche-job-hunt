@@ -5,7 +5,7 @@ from pathlib import Path
 import streamlit as st
 
 from src import messages
-from src.schema import ApplicationStatus, Job, is_valid_posting_url
+from src.schema import ApplicationStatus, Job, is_valid_http_url
 from src.storage import JobNotFoundError, Storage
 
 STAGES = [
@@ -84,7 +84,7 @@ def validate_job(job: Job) -> str | None:
     """Return the first problem with a trimmed job, or None if it can be saved."""
     if not job.company or not job.role:
         return messages.REQUIRED_FIELDS
-    if job.platform and not is_valid_posting_url(job.platform):
+    if job.platform and not is_valid_http_url(job.platform):
         return messages.INVALID_POSTING_URL
     return None
 

@@ -2,7 +2,7 @@ import streamlit as st
 
 from src.company_filters import filter_companies
 from src.company_form import open_company_form, show_company_form
-from src.schema import Company, is_valid_posting_url
+from src.schema import Company, is_valid_http_url
 
 COLUMN_WIDTHS = [2, 1.4, 1.4, 1.3, 1.3, 1.6, 0.6]
 PAGE_SIZE = 6
@@ -58,7 +58,7 @@ def render_company_details(company: Company | None) -> None:
                 ("Website", company.website_url),
                 ("Careers", company.careers_url),
             ):
-                if is_valid_posting_url(url):
+                if is_valid_http_url(url):
                     st.link_button(label, url, icon=":material/open_in_new:")
         st.divider()
         st.caption("LINKED JOBS")

@@ -48,7 +48,7 @@ class Company:
     notes: str = ""
 
 
-def is_valid_posting_url(url: str) -> bool:
+def is_valid_http_url(url: str) -> bool:
     """Accept only HTTP(S) URLs with a host and no whitespace or control characters."""
     try:
         parsed = urlsplit(url)
