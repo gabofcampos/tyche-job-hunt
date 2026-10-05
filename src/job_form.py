@@ -37,6 +37,23 @@ def open_edit_form(job_id: str) -> None:
     st.session_state.job_form_open = True
 
 
+def delete_job(job_id: str) -> None:
+    try:
+        with Storage() as storage:
+            storage.delete_job(job_id)
+    except JobNotFoundError:
+        st.session_state.job_delete_error = messages.DELETE_JOB_UNAVAILABLE
+    except sqlite3.Error, OSError:
+        st.session_state.job_delete_error = messages.DELETE_FAILED
+    else:
+        if st.session_state.get("selected_job_id") == job_id:
+            st.session_state.selected_job_id = None
+        if st.session_state.get("job_form_job_id") == job_id:
+            close_job_form()
+            st.session_state.job_form_job_id = None
+        st.session_state.job_saved_message = messages.JOB_DELETED
+
+
 def close_job_form() -> None:
     st.session_state.job_form_open = False
 

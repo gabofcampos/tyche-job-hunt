@@ -11,7 +11,7 @@ DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "jobs.sqlite
 
 
 class JobNotFoundError(LookupError):
-    """Raised when an update targets an ID that is not stored."""
+    """Raised when an update or deletion targets an ID that is not stored."""
 
 
 class Storage:
@@ -101,6 +101,14 @@ class Storage:
             )
             if cursor.rowcount == 0:
                 raise JobNotFoundError(job.id)
+
+    def delete_job(self, job_id: str) -> None:
+        with self._connection:
+            cursor = self._connection.execute(
+                "DELETE FROM jobs WHERE id = ?", (job_id,)
+            )
+            if cursor.rowcount == 0:
+                raise JobNotFoundError(job_id)
 
     def load_jobs(self) -> list[Job]:
         with self._connection:

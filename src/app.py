@@ -61,6 +61,8 @@ if st.session_state.get("job_form_open", False):
 
 if "job_saved_message" in st.session_state:
     st.success(st.session_state.pop("job_saved_message"))
+if "job_delete_error" in st.session_state:
+    st.error(st.session_state.pop("job_delete_error"))
 
 searched_for_jobs = [
     job
