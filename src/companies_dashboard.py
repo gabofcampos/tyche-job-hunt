@@ -1,5 +1,6 @@
 import streamlit as st
 
+from src.company_filters import filter_companies
 from src.schema import Company, is_valid_posting_url
 
 COLUMN_WIDTHS = [2, 1.4, 1.4, 1.3, 1.3, 1.6, 0.6]
@@ -82,9 +83,8 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
         icon=":material/add:",
         type="primary",
         key="add_company",
-        disabled=True,
         width="stretch",
-        help="Company creation is coming soon.",
+        help="Add a company you might be interested in working for.",
     )
 
     table, details = st.columns([5, 2], gap="medium")
@@ -95,15 +95,11 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
         search_col, sort_col, clear_col = st.columns(
             [4, 1.4, 1.2], vertical_alignment="bottom"
         )
-        query = (
-            search_col.text_input(
-                "Search companies",
-                placeholder="Company name, tags or notes...",
-                key="companies_search",
-                label_visibility="collapsed",
-            )
-            .strip()
-            .casefold()
+        query = search_col.text_input(
+            "Search companies",
+            placeholder="Company name, tags or notes...",
+            key="companies_search",
+            label_visibility="collapsed",
         )
         sort = sort_col.selectbox(
             "Sort companies",
@@ -115,11 +111,8 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
             "Clear filters", on_click=clear_company_filters, key="clear_company_filters"
         )
         columns = st.columns(COLUMN_WIDTHS)
-        name = (
-            columns[0]
-            .text_input("Company", placeholder="Search", key="companies_name")
-            .strip()
-            .casefold()
+        name = columns[0].text_input(
+            "Company", placeholder="Search", key="companies_name"
         )
         filters = {}
         for column, field, label in zip(
@@ -145,32 +138,12 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
                 key=f"companies_{field}",
             )
         columns[6].markdown("Jobs")
-        visible = []
-        for company in companies:
-            if name not in company.name.casefold():
-                continue
-            if (
-                query
-                not in " ".join([company.name, company.tags, company.notes]).casefold()
-            ):
-                continue
-            if any(
-                value is not None
-                and value
-                not in (
-                    [company.interest.value]
-                    if field == "interest"
-                    else [
-                        part.strip()
-                        for part in (getattr(company, field) or "").split(",")
-                    ]
-                )
-                for field, value in filters.items()
-            ):
-                continue
-            visible.append(company)
-        visible.sort(
-            key=lambda company: company.name.casefold(), reverse=sort == "Name Z–A"
+        visible = filter_companies(
+            companies,
+            query=query,
+            name=name,
+            filters=filters,
+            descending=sort == "Name Z–A",
         )
         pages = max(1, (len(visible) + PAGE_SIZE - 1) // PAGE_SIZE)
         st.session_state.companies_page = min(
