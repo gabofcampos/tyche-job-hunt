@@ -27,6 +27,7 @@ def show_company_form() -> None:
         work_setup = st.selectbox(
             "Work setup (optional)",
             list(WorkSetup),
+            index=None,
             format_func=lambda status: status.value,
             key="company_draft_work_setup",
         )
@@ -63,8 +64,7 @@ def show_company_form() -> None:
         st.error("Enter a company name.")
         return
     if any(
-        url.strip() and not is_valid_http_url(url.strip())
-        for url in (website, careers)
+        url.strip() and not is_valid_http_url(url.strip()) for url in (website, careers)
     ):
         st.error(
             "Enter valid HTTP or HTTPS URLs for Website and Careers, or leave them empty."

@@ -37,7 +37,18 @@ def render_company_details(company: Company) -> None:
         st.badge(f"{company.interest.value} interest", color="green")
         st.caption(
             " · ".join(
-                filter(None, [company.industry, company.location, company.work_setup])
+                filter(
+                    None,
+                    [
+                        company.industry,
+                        company.location,
+                        (
+                            company.work_setup.value
+                            if company.work_setup is not None
+                            else None
+                        ),
+                    ],
+                )
             )
         )
         st.divider()
@@ -139,7 +150,15 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
                 value = (
                     company.interest.value
                     if field == "interest"
-                    else getattr(company, field)
+                    else (
+                        (
+                            company.work_setup.value
+                            if company.work_setup is not None
+                            else None
+                        )
+                        if field == "work_setup"
+                        else getattr(company, field)
+                    )
                 )
                 values.update(
                     part.strip() for part in (value or "").split(",") if part.strip()
@@ -181,7 +200,9 @@ def render_companies_dashboard(companies: list[Company] | None = None) -> None:
                 st.rerun()
             row[1].text(company.industry or "—")
             row[2].text(company.location or "—")
-            row[3].text(company.work_setup or "—")
+            row[3].text(
+                company.work_setup.value if company.work_setup is not None else "—"
+            )
             row[4].badge(company.interest.value, color="green")
             row[5].text(company.tags or "—")
             row[6].text("—")

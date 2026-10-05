@@ -8,7 +8,7 @@ from assertpy import assert_that
 from streamlit.testing.v1 import AppTest
 
 from src import company_form, job_form, storage
-from src.schema import Company, CompanyInterestRate
+from src.schema import Company, CompanyInterestRate, WorkSetup
 from src.storage import Storage
 
 
@@ -98,14 +98,15 @@ class TestCompanyForm:
 
 
 class TestCompanyStorage:
-    def test_all_fields_survive_reopening_and_initialization(self, db_path):
+    @pytest.mark.parametrize("work_setup", [None, *WorkSetup])
+    def test_all_fields_survive_reopening_and_initialization(self, db_path, work_setup):
         from datetime import date
 
         company = Company(
             "O'Brien",
             "Geo",
             "EU",
-            None,
+            work_setup,
             CompanyInterestRate.HIGH,
             "maps, Python",
             "https://example.com",

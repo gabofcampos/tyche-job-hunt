@@ -28,9 +28,18 @@ def filter_companies(
             not in (
                 [company.interest.value]
                 if field == "interest"
-                else [
-                    part.strip() for part in (getattr(company, field) or "").split(",")
-                ]
+                else (
+                    (
+                        [company.work_setup.value]
+                        if company.work_setup is not None
+                        else []
+                    )
+                    if field == "work_setup"
+                    else [
+                        part.strip()
+                        for part in (getattr(company, field) or "").split(",")
+                    ]
+                )
             )
             for field, value in filters.items()
         ):

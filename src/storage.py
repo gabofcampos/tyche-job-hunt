@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 from types import TracebackType
 
-from src.schema import ApplicationStatus, Company, CompanyInterestRate, Job
+from src.schema import ApplicationStatus, Company, CompanyInterestRate, Job, WorkSetup
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "jobs.sqlite3"
 
@@ -206,7 +206,9 @@ def company_to_params(company: Company) -> dict[str, str | int | None]:
         "name": company.name,
         "industry": company.industry,
         "location": company.location,
-        "work_setup": company.work_setup,
+        "work_setup": (
+            company.work_setup.value if company.work_setup is not None else None
+        ),
         "interest": company.interest.value,
         "tags": company.tags,
         "website_url": company.website_url,
@@ -226,7 +228,9 @@ def row_to_company(row: sqlite3.Row) -> Company:
         name=row["name"],
         industry=row["industry"],
         location=row["location"],
-        work_setup=row["work_setup"],
+        work_setup=(
+            WorkSetup(row["work_setup"]) if row["work_setup"] is not None else None
+        ),
         interest=CompanyInterestRate(row["interest"]),
         tags=row["tags"],
         website_url=row["website_url"],

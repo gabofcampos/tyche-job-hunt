@@ -4,7 +4,7 @@ from streamlit.testing.v1 import AppTest
 
 def companies_app():
     from src.companies_dashboard import render_companies_dashboard
-    from src.schema import Company, CompanyInterestRate
+    from src.schema import Company, CompanyInterestRate, WorkSetup
 
     render_companies_dashboard(
         [
@@ -12,7 +12,7 @@ def companies_app():
                 name="CARTO",
                 industry="Geospatial",
                 location="Remote EU",
-                work_setup="Remote",
+                work_setup=WorkSetup.REMOTE,
                 interest=CompanyInterestRate.HIGH,
                 tags="maps, Python",
                 website_url="https://carto.com",
@@ -25,7 +25,7 @@ def companies_app():
                 name="Strava",
                 industry="Fitness",
                 location="Europe",
-                work_setup="Hybrid",
+                work_setup=WorkSetup.HYBRID,
                 interest=CompanyInterestRate.SOMEWHAT,
                 tags="outdoors",
                 website_url="",
@@ -65,3 +65,12 @@ class TestCompaniesDashboard:
         assert_that(
             [b.label for b in app.button if b.key.startswith("company_")]
         ).is_equal_to(["CARTO", "Strava"])
+
+    def test_work_setup_filter_matches_enum(self):
+        app = AppTest.from_function(companies_app).run()
+
+        app.selectbox(key="companies_work_setup").select("Remote").run()
+
+        assert_that(
+            [b.label for b in app.button if b.key.startswith("company_")]
+        ).is_equal_to(["CARTO"])

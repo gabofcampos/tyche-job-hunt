@@ -8,7 +8,7 @@ DATABASE_UNREADABLE = (
     "then reload the app."
 )
 DATABASE_INVALID = (
-    "The database contains an invalid date, status, or company interest. "
+    "The database contains an invalid date, status, company interest, or work setup. "
     "Check the stored data or restore a known-good backup."
 )
 SELECTED_JOB_UNAVAILABLE = (
