@@ -66,7 +66,7 @@ def render_job_details(job: Job) -> None:
             )
 
         with del_col:
-            st.html(Path(__file__).parent / "styles" / "job_form.css")
+            st.html(Path(__file__).parent / "styles" / "job_delete.css")
             st.button(
                 "Delete job",
                 icon=":material/delete:",
