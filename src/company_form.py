@@ -9,7 +9,7 @@ from src.storage import CompanyNotFoundError, Storage
 
 def open_company_form() -> None:
     for key in list(st.session_state):
-        if key.startswith("company_draft_"):
+        if isinstance(key, str) and key.startswith("company_draft_"):
             del st.session_state[key]
     st.session_state.company_form_id = None
     st.session_state.job_form_open = False

@@ -36,7 +36,9 @@ def fill_text_fields(app: AppTest, values: dict[str, str]) -> None:
         next(
             widget
             for widget in app.text_input
-            if widget.label == label and widget.key.startswith("job_draft_")
+            if widget.label == label
+            and widget.key is not None
+            and widget.key.startswith("job_draft_")
         ).set_value(value)
 
 
@@ -179,7 +181,11 @@ class TestDashboard:
                     for w in app.text_input
                     if w.key and w.key.startswith("job_draft_")
                 ],
-                [w.value for w in app.selectbox if w.key.startswith("job_draft_")],
+                [
+                    w.value
+                    for w in app.selectbox
+                    if w.key is not None and w.key.startswith("job_draft_")
+                ],
                 app.date_input[0].value,
             )
         ).is_equal_to(
@@ -341,7 +347,11 @@ class TestDashboard:
                     for w in app.text_input
                     if w.key and w.key.startswith("job_draft_")
                 ],
-                [w.value for w in app.selectbox if w.key.startswith("job_draft_")],
+                [
+                    w.value
+                    for w in app.selectbox
+                    if w.key is not None and w.key.startswith("job_draft_")
+                ],
                 app.date_input[0].value,
             )
         ).is_equal_to(

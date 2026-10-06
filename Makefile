@@ -7,7 +7,10 @@ format:
 	uv run isort src tests
 	uv run black src tests
 
-check: format test
+typecheck:
+	uv run ty check src tests
+
+check: format test typecheck
 
 run:
 	uv run python -m streamlit run src/app.py

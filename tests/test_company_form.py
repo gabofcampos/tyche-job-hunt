@@ -46,7 +46,11 @@ class TestCompanyForm:
                 list(app.exception),
                 list(fresh.exception),
                 [c.name for c in companies],
-                [b.label for b in fresh.button if b.key.startswith("company_")],
+                [
+                    b.label
+                    for b in fresh.button
+                    if b.key is not None and b.key.startswith("company_")
+                ],
                 app.session_state.company_form_open,
             )
         ).is_equal_to(([], [], ["CARTO"], ["CARTO"], False))
