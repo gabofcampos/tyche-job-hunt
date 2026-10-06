@@ -45,7 +45,11 @@ class TestCompaniesDashboard:
         app.text_input(key="companies_search").set_value("python").run()
 
         assert_that(
-            [b.label for b in app.button if b.key.startswith("company_")]
+            [
+                b.label
+                for b in app.button
+                if b.key is not None and b.key.startswith("company_")
+            ]
         ).is_equal_to(["CARTO"])
 
     def test_selected_details_survive_filtering(self):
@@ -63,7 +67,11 @@ class TestCompaniesDashboard:
         app.button(key="clear_company_filters").click().run()
 
         assert_that(
-            [b.label for b in app.button if b.key.startswith("company_")]
+            [
+                b.label
+                for b in app.button
+                if b.key is not None and b.key.startswith("company_")
+            ]
         ).is_equal_to(["CARTO", "Strava"])
 
     def test_work_setup_filter_matches_enum(self):
@@ -72,5 +80,9 @@ class TestCompaniesDashboard:
         app.selectbox(key="companies_work_setup").select("Remote").run()
 
         assert_that(
-            [b.label for b in app.button if b.key.startswith("company_")]
+            [
+                b.label
+                for b in app.button
+                if b.key is not None and b.key.startswith("company_")
+            ]
         ).is_equal_to(["CARTO"])

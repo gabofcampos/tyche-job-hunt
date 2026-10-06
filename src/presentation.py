@@ -1,8 +1,10 @@
 """Shared display choices for the job board and details."""
 
+from typing import Literal
+
 from src.schema import ApplicationStatus, Job
 
-STATUS_COLORS = {
+STATUS_COLORS: dict[ApplicationStatus, Literal["yellow", "blue", "red"]] = {
     ApplicationStatus.INTERESTED: "yellow",
     ApplicationStatus.ACTIVE: "blue",
     ApplicationStatus.CLOSED: "red",
