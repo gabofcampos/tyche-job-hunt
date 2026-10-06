@@ -8,3 +8,6 @@ format:
 	uv run black src tests
 
 check: format test
+
+run:
+	uv run python -m streamlit run src/app.py
