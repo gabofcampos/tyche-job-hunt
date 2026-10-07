@@ -2,6 +2,9 @@
 
 A simple local tracker for job applications and companies you would like to work for.
 
+Read the [design and implementation decisions](docs/decisions.md) for the reasoning
+behind the project's technical choices.
+
 rules:
 
 - it will be born and developed out of necessity
